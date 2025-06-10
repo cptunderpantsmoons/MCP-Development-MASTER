@@ -1,0 +1,424 @@
+apiVersion: 1
+
+groups:
+  - name: dsn-sentinel-alerts
+    orgId: 1
+    folder: DSN Security
+    interval: 30s
+    rules:
+      - uid: dsn-high-cpu
+        title: DSN High CPU Usage
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: dsn_sentinel_cpu_usage_percent > 90
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: "Sentinel node CPU usage is above 90% for more than 2 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://docs.dsn.security/runbooks/high-cpu"
+          summary: "High CPU usage detected on sentinel node"
+        labels:
+          severity: warning
+          component: sentinel
+          alert_type: resource
+
+      - uid: dsn-high-memory
+        title: DSN High Memory Usage
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: dsn_sentinel_memory_usage_percent > 85
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: "Sentinel node memory usage is above 85% for more than 5 minutes. Current value: {{ $value }}%"
+          runbook_url: "https://docs.dsn.security/runbooks/high-memory"
+          summary: "High memory usage detected on sentinel node"
+        labels:
+          severity: warning
+          component: sentinel
+          alert_type: resource
+
+      - uid: dsn-low-health-score
+        title: DSN Low Node Health Score
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: dsn_sentinel_node_health_score < 0.5
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          description: "Sentinel node health score is below 0.5. Current score: {{ $value }}. This indicates potential system issues."
+          runbook_url: "https://docs.dsn.security/runbooks/low-health"
+          summary: "Low node health score detected"
+        labels:
+          severity: critical
+          component: sentinel
+          alert_type: health
+
+      - uid: dsn-threat-detected
+        title: DSN Threat Detection Alert
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: increase(dsn_security_threats_detected_total[1m]) > 0
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 0s
+        annotations:
+          description: "{{ $value }} threat(s) detected in the last minute. Immediate investigation required."
+          runbook_url: "https://docs.dsn.security/runbooks/threat-response"
+          summary: "Security threat detected by DSN sentinel"
+        labels:
+          severity: critical
+          component: security
+          alert_type: threat
+
+      - uid: dsn-high-audit-load
+        title: DSN High Audit Load
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: dsn_audit_load_factor > 0.9
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 3m
+        annotations:
+          description: "Audit load factor is above 90% for more than 3 minutes. Current load: {{ $value }}. Consider scaling resources."
+          runbook_url: "https://docs.dsn.security/runbooks/high-audit-load"
+          summary: "High audit load detected"
+        labels:
+          severity: warning
+          component: audit
+          alert_type: performance
+
+      - uid: dsn-metric-anomaly
+        title: DSN Metric Anomaly Detected
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: rate(dsn_security_metric_anomalies_total[5m]) > 0.1
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          description: "Metric anomalies detected at rate {{ $value }}/sec. This may indicate metric spoofing attacks or system issues."
+          runbook_url: "https://docs.dsn.security/runbooks/metric-anomaly"
+          summary: "Metric anomalies detected - possible attack"
+        labels:
+          severity: warning
+          component: security
+          alert_type: anomaly
+
+      - uid: dsn-rate-limit-exceeded
+        title: DSN Rate Limit Exceeded
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: rate(dsn_security_events_total{event_type="rate_limit_exceeded"}[5m]) > 0.5
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: "Rate limiting is being triggered at {{ $value }}/sec. This may indicate a DDoS attack or misconfigured client."
+          runbook_url: "https://docs.dsn.security/runbooks/rate-limit"
+          summary: "Rate limiting triggered - possible DDoS attack"
+        labels:
+          severity: warning
+          component: security
+          alert_type: ddos
+
+      - uid: dsn-security-alerts-spike
+        title: DSN Security Alerts Spike
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: rate(dsn_security_alerts_triggered_total[5m]) > 1
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          description: "Security alerts are being triggered at {{ $value }}/sec. This indicates multiple security events."
+          runbook_url: "https://docs.dsn.security/runbooks/alert-spike"
+          summary: "High rate of security alerts detected"
+        labels:
+          severity: critical
+          component: security
+          alert_type: spike
+
+      - uid: dsn-node-down
+        title: DSN Sentinel Node Down
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: up{job="dsn-sentinel"} == 0
+              interval: ""
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 30s
+        annotations:
+          description: "Sentinel node is down or unreachable. Immediate attention required."
+          runbook_url: "https://docs.dsn.security/runbooks/node-down"
+          summary: "Sentinel node is down"
+        labels:
+          severity: critical
+          component: sentinel
+          alert_type: availability
+
+      - uid: dsn-scan-frequency-low
+        title: DSN Low Scan Frequency
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: rate(dsn_audit_scans_total[10m]) < 0.1
+              interval: ""
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: "Security scan frequency is below expected rate ({{ $value }}/sec). This may indicate scanning issues."
+          runbook_url: "https://docs.dsn.security/runbooks/low-scan-frequency"
+          summary: "Low security scan frequency detected"
+        labels:
+          severity: warning
+          component: audit
+          alert_type: performance
+
+  - name: dsn-badbox-specific
+    orgId: 1
+    folder: DSN Security
+    interval: 15s
+    rules:
+      - uid: dsn-badbox-c2-traffic
+        title: DSN BadBox C2 Traffic Detected
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: increase(dsn_security_events_total{event_type="badbox_c2_detected"}[1m]) > 0
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 0s
+        annotations:
+          description: "BadBox 2.0 C2 traffic pattern detected. Immediate isolation and investigation required."
+          runbook_url: "https://docs.dsn.security/runbooks/badbox-response"
+          summary: "BadBox 2.0 C2 communication detected"
+        labels:
+          severity: critical
+          component: security
+          alert_type: badbox
+          threat_type: c2
+
+      - uid: dsn-badbox-play-protect-disabled
+        title: DSN BadBox Play Protect Disabled
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: increase(dsn_security_events_total{event_type="play_protect_disabled"}[1m]) > 0
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 0s
+        annotations:
+          description: "Play Protect disabled event detected - characteristic of BadBox 2.0 infection."
+          runbook_url: "https://docs.dsn.security/runbooks/badbox-response"
+          summary: "Play Protect disabled - BadBox indicator"
+        labels:
+          severity: critical
+          component: security
+          alert_type: badbox
+          threat_type: protection_bypass
+
+      - uid: dsn-badbox-dga-activity
+        title: DSN BadBox DGA Activity
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasource:
+              type: prometheus
+              uid: prometheus
+            model:
+              expr: increase(dsn_security_events_total{event_type="dga_detected"}[5m]) > 3
+              interval: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          description: "Domain Generation Algorithm (DGA) activity detected - {{ $value }} instances in 5 minutes. Possible BadBox C2 evasion."
+          runbook_url: "https://docs.dsn.security/runbooks/dga-response"
+          summary: "DGA activity detected - BadBox evasion technique"
+        labels:
+          severity: warning
+          component: security
+          alert_type: badbox
+          threat_type: dga
+
+contactPoints:
+  - uid: dsn-security-team
+    name: DSN Security Team
+    type: email
+    settings:
+      addresses: security@dsn.local
+      subject: "[DSN Alert] {{ .GroupLabels.alertname }}"
+      message: |
+        Alert: {{ .GroupLabels.alertname }}
+        Severity: {{ .GroupLabels.severity }}
+        Component: {{ .GroupLabels.component }}
+        
+        {{ range .Alerts }}
+        Description: {{ .Annotations.description }}
+        Runbook: {{ .Annotations.runbook_url }}
+        {{ end }}
+
+  - uid: dsn-pagerduty
+    name: DSN PagerDuty
+    type: pagerduty
+    settings:
+      integrationKey: "${PAGERDUTY_INTEGRATION_KEY}"
+      severity: "{{ .GroupLabels.severity }}"
+      component: "{{ .GroupLabels.component }}"
+      group: "DSN Security"
+
+notificationPolicies:
+  - receiver: dsn-security-team
+    group_by:
+      - alertname
+      - severity
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 12h
+    matchers:
+      - severity =~ "warning|critical"
+    routes:
+      - receiver: dsn-pagerduty
+        group_wait: 0s
+        group_interval: 1m
+        repeat_interval: 5m
+        matchers:
+          - severity = "critical"
+        continue: true

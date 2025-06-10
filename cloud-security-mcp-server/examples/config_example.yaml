@@ -1,0 +1,279 @@
+# Example Cloud Security MCP Server Configuration
+# This is a complete example configuration showing all available options
+
+# Server Configuration
+server_name: "cloud-security-mcp"
+server_version: "1.0.0"
+api_rate_limit: 100
+api_timeout_seconds: 30
+
+# AWS Configuration
+aws:
+  # Credentials (use environment variables in production)
+  access_key_id: "AKIA..."  # Or use environment variable AWS_ACCESS_KEY_ID
+  secret_access_key: "..."  # Or use environment variable AWS_SECRET_ACCESS_KEY
+  session_token: null       # Optional, for temporary credentials
+  region: "us-east-1"
+  profile: null             # Use AWS profile instead of access keys
+  
+  # AWS-specific settings
+  assumed_role_arn: null    # Optional role to assume
+  external_id: null         # Optional external ID for role assumption
+  
+# Azure Configuration  
+azure:
+  subscription_id: "12345678-1234-1234-1234-123456789abc"
+  tenant_id: "87654321-4321-4321-4321-cba987654321"
+  client_id: "abcdef12-3456-7890-abcd-ef1234567890"
+  client_secret: "your-client-secret"  # Use environment variable in production
+  
+  # Azure-specific settings
+  cloud: "AzureCloud"       # AzureCloud, AzureUSGovernment, AzureChinaCloud, AzureGermanCloud
+  authority: null           # Optional custom authority URL
+
+# GCP Configuration
+gcp:
+  project_id: "my-gcp-project"
+  credentials_file: "/path/to/service-account.json"  # Path to service account key
+  service_account_key: null  # Or inline service account key JSON
+  
+  # GCP-specific settings
+  quota_project_id: null    # Optional quota project
+  scopes:                   # Optional custom scopes
+    - "https://www.googleapis.com/auth/cloud-platform"
+
+# Kubernetes Configuration
+kubernetes:
+  kubeconfig_path: "~/.kube/config"
+  namespace: "default"
+  context: null             # Optional specific context to use
+  
+  # Kubernetes-specific settings
+  cluster_name: null        # Optional cluster name for multi-cluster setups
+  service_account: null     # Optional service account for in-cluster auth
+
+# Security Tools Configuration
+security_tools:
+  enable_container_scanning: true
+  enable_iac_scanning: true
+  enable_compliance_checks: true
+  max_scan_time_minutes: 30
+  max_concurrent_scans: 5
+  scan_timeout_seconds: 1800
+  result_retention_days: 90
+  
+  # Tool-specific settings
+  prowler:
+    enabled: true
+    image: "toniblyx/prowler:latest"
+    additional_args: []
+    
+  checkov:
+    enabled: true
+    image: "bridgecrew/checkov:latest"
+    skip_checks: []           # List of checks to skip
+    
+  trivy:
+    enabled: true
+    image: "aquasec/trivy:latest"
+    severity_filter: ["CRITICAL", "HIGH"]
+    
+  kube_hunter:
+    enabled: true
+    image: "aquasec/kube-hunter:latest"
+    scan_type: "remote"       # remote, internal, network
+
+# Compliance Configuration
+compliance:
+  frameworks: ["cis", "nist", "soc2", "pci_dss"]
+  
+  # Framework-specific settings
+  cis:
+    aws_benchmark_version: "1.5.0"
+    azure_benchmark_version: "1.4.0"
+    gcp_benchmark_version: "1.3.0"
+    kubernetes_benchmark_version: "1.7.0"
+    
+  nist:
+    profile: "current"        # current, target
+    implementation_tier: 3    # 1-4
+    
+  soc2:
+    trust_criteria: ["security", "availability", "confidentiality"]
+    audit_type: "type_ii"
+    
+  pci_dss:
+    merchant_level: 4         # 1-4
+    validation_type: "saq"    # saq, qsa
+
+# Security Policy Configuration
+security_policy:
+  allowed_regions: 
+    - "us-east-1"
+    - "us-west-2"
+    - "eu-west-1"
+  excluded_resources:
+    - "test-*"
+    - "dev-*"
+    - "sandbox-*"
+  alert_severity_threshold: "high"  # critical, high, medium, low
+  
+  # Risk scoring settings
+  risk_scoring:
+    weights:
+      critical: 10
+      high: 7
+      medium: 4
+      low: 1
+    thresholds:
+      high_risk: 80
+      medium_risk: 40
+      low_risk: 20
+
+# Logging Configuration
+logging:
+  level: "INFO"             # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "json"            # json, text
+  file: "/app/logs/cloud_security.log"
+  
+  # Advanced logging settings
+  rotation:
+    max_size: "100MB"
+    backup_count: 5
+  structured_logging: true
+  log_sensitive_data: false
+
+# Alerting Configuration
+alerting:
+  slack_webhook_url: "https://hooks.slack.com/services/..."
+  email_notifications: "security-team@example.com"
+  enable_webhooks: false
+  
+  # Alert channels
+  channels:
+    critical: ["slack", "email", "pagerduty"]
+    high: ["slack", "email"]
+    medium: ["slack"]
+    low: ["email"]
+    
+  # Alert rules
+  rules:
+    critical_findings_threshold: 1
+    high_findings_threshold: 5
+    compliance_score_threshold: 60
+    scan_failure_threshold: 3
+
+# Database Configuration
+database:
+  url: "postgresql://postgres:password@localhost:5432/cloud_security"
+  pool_size: 10
+  max_overflow: 20
+  pool_timeout: 30
+  
+  # Redis configuration
+  redis_url: "redis://localhost:6379/0"
+  redis_pool_size: 10
+
+# Monitoring Configuration
+monitoring:
+  enable_metrics: true
+  metrics_port: 8080
+  metrics_path: "/metrics"
+  
+  # Prometheus configuration
+  prometheus:
+    enabled: true
+    pushgateway_url: null
+    job_name: "cloud-security-mcp"
+    
+  # Health check configuration
+  health_check:
+    enabled: true
+    port: 8080
+    path: "/health"
+    
+# API Configuration
+api:
+  enable_web_interface: false
+  web_port: 8080
+  cors_origins: ["*"]
+  
+  # Authentication
+  authentication:
+    enabled: false
+    method: "api_key"       # api_key, oauth2, basic
+    
+  # Rate limiting
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 100
+    burst_size: 20
+
+# Notification Configuration
+notifications:
+  templates:
+    critical_finding: "templates/critical_finding.html"
+    compliance_report: "templates/compliance_report.html"
+    scan_summary: "templates/scan_summary.html"
+    
+  # Notification channels
+  channels:
+    email:
+      smtp_server: "smtp.example.com"
+      smtp_port: 587
+      username: "notifications@example.com"
+      password: "smtp-password"
+      use_tls: true
+      
+    slack:
+      bot_token: "xoxb-..."
+      default_channel: "#security"
+      
+    webhook:
+      endpoints:
+        - url: "https://api.example.com/security-events"
+          secret: "webhook-secret"
+          events: ["critical_finding", "compliance_failure"]
+
+# Backup Configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"      # Daily at 2 AM
+  retention_days: 30
+  
+  # Backup destinations
+  destinations:
+    s3:
+      enabled: true
+      bucket: "security-backups"
+      prefix: "cloud-security-mcp/"
+      
+    local:
+      enabled: true
+      path: "/app/backups"
+
+# Performance Configuration
+performance:
+  async_workers: 4
+  max_concurrent_scans: 5
+  scan_queue_size: 100
+  result_cache_ttl: 3600    # 1 hour
+  
+  # Resource limits
+  limits:
+    memory_limit: "2GB"
+    cpu_limit: "1000m"
+    disk_space_limit: "10GB"
+
+# Development Configuration (only for development environments)
+development:
+  debug: false
+  auto_reload: false
+  mock_cloud_apis: false
+  test_mode: false
+  
+  # Testing settings
+  testing:
+    skip_real_scans: false
+    mock_scan_results: false
+    test_data_path: "/app/test_data"

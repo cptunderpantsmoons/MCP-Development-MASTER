@@ -1,0 +1,227 @@
+# DSN Sentinel Node Configuration - SECURE BY DEFAULT
+# Production-ready configuration with security enabled
+
+# Basic identification (auto-generated if not specified)
+sentinel_id: ""  # Will be auto-generated securely
+region: "us-west-2"
+zone: "us-west-2a"
+
+# Server configuration
+server:
+  grpc_port: 9090
+  http_port: 8080
+  metrics_port: 8081
+  read_timeout: "30s"
+  write_timeout: "30s"
+  max_connections: 1000
+
+# Logging configuration
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+
+# Metrics configuration
+metrics:
+  enabled: true
+  path: "/metrics"
+  namespace: "dsn"
+  subsystem: "sentinel"
+  push_gateway: ""
+
+# Monitoring configuration with security features
+monitoring:
+  enabled: true
+  interval: "30s"
+  metrics_enabled: true
+  security_enabled: true
+  rate_limit: 1000  # Requests per second to prevent DoS
+  
+  # System monitoring thresholds
+  thresholds:
+    cpu_warning: 70.0
+    cpu_critical: 85.0
+    memory_warning: 75.0
+    memory_critical: 90.0
+    health_score_critical: 0.3
+    
+  # Security monitoring settings
+  security:
+    anomaly_detection: true
+    metric_validation: true
+    rate_limiting: true
+    alert_throttling: true
+
+# Health check configuration
+health_check:
+  enabled: true
+  interval: "30s"
+  timeout: "5s"
+  endpoint: "/health"
+
+# Threat detection configuration
+threat_detection:
+  enabled: true
+  scan_interval: "60s"
+  deep_scan_enabled: true  # Enable for better security
+  max_concurrent_scans: 5
+  excluded_paths:
+    - "/tmp"
+    - "/var/log"
+    - "/proc"
+    - "/sys"
+    - "/dev"
+  
+  # Detection engines
+  engines:
+    signature:
+      enabled: true
+      database_path: "/var/lib/dsn/signatures"
+      update_interval: "12h"  # More frequent updates
+      custom_rules: []
+    
+    anomaly:
+      enabled: true
+      sensitivity_level: "medium"
+      learning_period: "72h"  # Shorter learning period for faster adaptation
+      confidence_threshold: 0.75
+    
+    behavior:
+      enabled: true
+      monitoring_window: "1h"
+      baseline_update: "12h"
+  
+  # Security thresholds (more restrictive)
+  thresholds:
+    cpu_usage: 70.0
+    memory_usage: 80.0
+    disk_usage: 85.0
+    network_traffic: 500000000  # 500MB/s
+    error_rate: 2.0
+
+# Security configuration - ENABLED BY DEFAULT
+security:
+  tls:
+    enabled: true  # MANDATORY in production
+    cert_file: "/etc/dsn/tls/server.crt"
+    key_file: "/etc/dsn/tls/server.key"
+    ca_file: "/etc/dsn/tls/ca.crt"
+  
+  mtls:
+    enabled: true  # Zero-trust requires mTLS
+    client_cert: "/etc/dsn/tls/client.crt"
+    client_key: "/etc/dsn/tls/client.key"
+    server_name: "dsn-sentinel"
+  
+  vault:
+    enabled: true  # Use Vault for secrets management
+    address: "https://vault.dsn.internal:8200"
+    token: ""  # Use service account token or auth method
+    namespace: "dsn"
+    auth_method: "kubernetes"
+    secret_path: "secret/dsn/sentinel"
+  
+  auth:
+    enabled: true  # Authentication mandatory
+    method: "jwt"
+    jwt_secret: ""  # Retrieved from Vault
+    oauth2:
+      client_id: ""
+      client_secret: ""
+      auth_url: "https://auth.dsn.internal/oauth2/auth"
+      token_url: "https://auth.dsn.internal/oauth2/token"
+      redirect_url: "https://sentinel.dsn.internal/auth/callback"
+
+# External services configuration
+services:
+  consensus:
+    enabled: true  # Enable for production deployment
+    endpoints:
+      - "consensus-node-1.dsn.internal:7051"
+      - "consensus-node-2.dsn.internal:7051"
+      - "consensus-node-3.dsn.internal:7051"
+    timeout: "30s"
+    tls:
+      enabled: true
+      cert_file: "/etc/dsn/tls/consensus-client.crt"
+      key_file: "/etc/dsn/tls/consensus-client.key"
+      ca_file: "/etc/dsn/tls/consensus-ca.crt"
+  
+  ai_engine:
+    enabled: true  # Enable AI threat detection
+    endpoints:
+      - "ai-engine.dsn.internal:8080"
+    timeout: "60s"
+    api_key: ""  # Retrieved from Vault
+  
+  healing:
+    enabled: true  # Enable self-healing
+    endpoints:
+      - "healing-service.dsn.internal:9090"
+    timeout: "30s"
+  
+  prometheus:
+    enabled: true  # Enable metrics collection
+    endpoint: "https://prometheus.dsn.internal:9090"
+    username: ""  # Retrieved from Vault
+    password: ""  # Retrieved from Vault
+
+# Storage configuration
+storage:
+  type: "local"  # Options: local, s3, gcs, azure
+  path: "/var/lib/dsn/data"
+  bucket: ""  # For cloud storage
+  region: ""  # For cloud storage
+  endpoint: ""  # For custom S3-compatible storage
+  retention_days: 90  # Longer retention for audit compliance
+  max_size: "50GB"  # Increased for better coverage
+
+# Additional security settings
+# Network access control
+network:
+  allowed_cidrs:
+    - "10.0.0.0/8"      # Private network
+    - "172.16.0.0/12"   # Private network
+    - "192.168.0.0/16"  # Private network
+  
+  rate_limiting:
+    enabled: true
+    requests_per_second: 100
+    burst_size: 200
+  
+  ip_allowlist:
+    enabled: true
+    allowed_ips: []  # Configure based on audit team IPs
+
+# Audit and compliance settings
+audit:
+  enabled: true
+  log_all_requests: true
+  log_sensitive_data: false  # Never log sensitive data
+  retention_days: 365  # One year retention for compliance
+  
+  # Audit-specific settings for MCP operations
+  mcp:
+    max_session_duration: "4h"  # Limit audit session time
+    require_approval: true      # Require approval for sensitive operations
+    log_level: "debug"         # Detailed logging during audits
+    
+# Performance and resource limits
+limits:
+  max_memory_mb: 2048
+  max_cpu_percent: 80
+  max_connections: 1000
+  max_file_descriptors: 8192
+  
+  # Request limits
+  max_request_size_mb: 10
+  max_response_size_mb: 50
+  request_timeout: "300s"
+
+# Development overrides (only for development environment)
+development:
+  # These settings are ignored in production
+  disable_tls: false          # Never disable TLS
+  disable_auth: false         # Never disable auth
+  disable_rate_limiting: false # Never disable rate limiting
+  verbose_logging: true       # More detailed logs in dev

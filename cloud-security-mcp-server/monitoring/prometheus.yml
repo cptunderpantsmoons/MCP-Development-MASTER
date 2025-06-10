@@ -1,0 +1,130 @@
+# Prometheus configuration for Cloud Security MCP Server
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'cloud-security-mcp'
+    replica: 'prometheus-1'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  - "alerts/*.yml"
+
+# Scrape configuration
+scrape_configs:
+  # Cloud Security MCP Server metrics
+  - job_name: 'cloud-security-mcp'
+    static_configs:
+      - targets: ['cloud-security-mcp:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 10s
+    params:
+      format: ['prometheus']
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Docker metrics
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['docker-exporter:9323']
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # PostgreSQL metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Security tool containers (when running)
+  - job_name: 'security-tools'
+    static_configs:
+      - targets: []  # Dynamically populated
+    relabel_configs:
+      - source_labels: [__meta_docker_container_label_security_tool]
+        target_label: tool_name
+      - source_labels: [__meta_docker_container_label_scan_id]
+        target_label: scan_id
+
+  # Cloud provider API metrics (custom exporters)
+  - job_name: 'aws-exporter'
+    static_configs:
+      - targets: ['aws-exporter:9100']
+    scrape_interval: 60s  # Less frequent for API calls
+
+  - job_name: 'azure-exporter'
+    static_configs:
+      - targets: ['azure-exporter:9100']
+    scrape_interval: 60s
+
+  - job_name: 'gcp-exporter'
+    static_configs:
+      - targets: ['gcp-exporter:9100']
+    scrape_interval: 60s
+
+  # Blackbox exporter for endpoint monitoring
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]  # Look for a HTTP 200 response.
+    static_configs:
+      - targets:
+        - http://cloud-security-mcp:8080/health
+        - https://api.github.com
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+# Remote write configuration (optional - for long-term storage)
+remote_write:
+  - url: "http://thanos-receive:19291/api/v1/receive"
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500
+
+# Recording rules for efficient querying
+recording_rules:
+  - name: cloud_security_aggregations
+    interval: 30s
+    rules:
+      - record: cloud_security:scan_duration_seconds:rate5m
+        expr: rate(cloud_security_scan_duration_seconds_total[5m])
+      
+      - record: cloud_security:scan_errors:rate5m
+        expr: rate(cloud_security_scan_errors_total[5m])
+      
+      - record: cloud_security:findings_by_severity
+        expr: sum(cloud_security_findings_total) by (severity, cloud_provider)
+      
+      - record: cloud_security:compliance_score_avg
+        expr: avg(cloud_security_compliance_score) by (framework, cloud_provider)
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 50GB
+    wal-compression: true

@@ -1,0 +1,30 @@
+security:
+  max_execution_time: 300
+  require_authorization: true
+  log_all_executions: true
+  container_timeout: 600
+  allowed_targets: []  # Empty means all targets allowed
+  
+docker:
+  base_image: "kalilinux/kali-rolling"
+  memory_limit: "512m"
+  cpu_limit: 0.5
+  network_mode: "bridge"
+  
+logging:
+  level: "INFO"
+  audit_log_path: "./audit_logs"
+  max_log_files: 30
+  
+tools:
+  enabled:
+    - nmap
+    - nikto
+    - gobuster
+    - sqlmap
+    - searchsploit
+    - masscan
+  
+  disabled:
+    - metasploit  # Requires special authorization
+    - aircrack-ng  # Requires hardware access

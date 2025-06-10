@@ -1,0 +1,263 @@
+groups:
+  - name: cloud_security_mcp_alerts
+    rules:
+      # Critical Security Alerts
+      - alert: CriticalSecurityFindingsDetected
+        expr: increase(cloud_security_findings_total{severity="critical"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Critical security findings detected"
+          description: "{{ $value }} critical security findings detected in the last 5 minutes"
+          runbook_url: "https://docs.example.com/runbooks/critical-findings"
+
+      - alert: HighVolumeSecurityFindings
+        expr: increase(cloud_security_findings_total[1h]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "High volume of security findings"
+          description: "{{ $value }} security findings detected in the last hour"
+          runbook_url: "https://docs.example.com/runbooks/high-volume-findings"
+
+      - alert: ComplianceScoreDropped
+        expr: cloud_security_compliance_score < 60
+        for: 10m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Compliance score dropped below threshold"
+          description: "Compliance score is {{ $value }}% for framework {{ $labels.framework }} on {{ $labels.cloud_provider }}"
+          runbook_url: "https://docs.example.com/runbooks/compliance-drop"
+
+      # System Health Alerts
+      - alert: CloudSecurityMCPDown
+        expr: up{job="cloud-security-mcp"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cloud-security-mcp
+          team: sre
+        annotations:
+          summary: "Cloud Security MCP Server is down"
+          description: "Cloud Security MCP Server has been down for more than 1 minute"
+          runbook_url: "https://docs.example.com/runbooks/service-down"
+
+      - alert: HighMemoryUsage
+        expr: (process_resident_memory_bytes{job="cloud-security-mcp"} / 1024 / 1024 / 1024) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: sre
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}GB, above 2GB threshold"
+          runbook_url: "https://docs.example.com/runbooks/high-memory"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="cloud-security-mcp"}[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: sre
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}%, above 80% threshold for 10 minutes"
+          runbook_url: "https://docs.example.com/runbooks/high-cpu"
+
+      # Scan Performance Alerts
+      - alert: ScanFailureRateHigh
+        expr: rate(cloud_security_scan_errors_total[5m]) / rate(cloud_security_scans_started_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "High scan failure rate"
+          description: "Scan failure rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+          runbook_url: "https://docs.example.com/runbooks/scan-failures"
+
+      - alert: ScanDurationHigh
+        expr: avg(rate(cloud_security_scan_duration_seconds_total[5m])) > 1800
+        for: 10m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Scan duration is high"
+          description: "Average scan duration is {{ $value }}s, above 30 minute threshold"
+          runbook_url: "https://docs.example.com/runbooks/slow-scans"
+
+      - alert: NoScansRunning
+        expr: increase(cloud_security_scans_started_total[1h]) == 0
+        for: 2h
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "No scans have been started"
+          description: "No security scans have been started in the last 2 hours"
+          runbook_url: "https://docs.example.com/runbooks/no-scans"
+
+      # Cloud Provider Alerts
+      - alert: CloudProviderAPIErrors
+        expr: increase(cloud_security_api_errors_total[10m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "High number of cloud provider API errors"
+          description: "{{ $value }} API errors for {{ $labels.cloud_provider }} in the last 10 minutes"
+          runbook_url: "https://docs.example.com/runbooks/api-errors"
+
+      - alert: CloudProviderRateLimitHit
+        expr: increase(cloud_security_rate_limit_errors_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Cloud provider rate limit exceeded"
+          description: "Rate limit exceeded for {{ $labels.cloud_provider }} - {{ $value }} errors in last 5 minutes"
+          runbook_url: "https://docs.example.com/runbooks/rate-limits"
+
+      # Security Tool Alerts
+      - alert: SecurityToolContainerFailed
+        expr: increase(cloud_security_tool_failures_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Security tool container failed"
+          description: "Security tool {{ $labels.tool }} failed {{ $value }} times in the last 5 minutes"
+          runbook_url: "https://docs.example.com/runbooks/tool-failures"
+
+      - alert: SecurityToolTimeout
+        expr: increase(cloud_security_tool_timeouts_total[10m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Security tool execution timeout"
+          description: "Security tool {{ $labels.tool }} timed out {{ $value }} times in the last 10 minutes"
+          runbook_url: "https://docs.example.com/runbooks/tool-timeouts"
+
+      # Database Alerts
+      - alert: DatabaseConnectionFailures
+        expr: increase(cloud_security_db_connection_errors_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: cloud-security-mcp
+          team: sre
+        annotations:
+          summary: "Database connection failures"
+          description: "{{ $value }} database connection failures in the last 5 minutes"
+          runbook_url: "https://docs.example.com/runbooks/db-connection"
+
+      - alert: RedisConnectionFailures
+        expr: increase(cloud_security_redis_connection_errors_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: sre
+        annotations:
+          summary: "Redis connection failures"
+          description: "{{ $value }} Redis connection failures in the last 5 minutes"
+          runbook_url: "https://docs.example.com/runbooks/redis-connection"
+
+      # Data Quality Alerts
+      - alert: OldScanResults
+        expr: time() - cloud_security_last_scan_timestamp > 86400
+        for: 1h
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Scan results are stale"
+          description: "Last scan for {{ $labels.cloud_provider }} was more than 24 hours ago"
+          runbook_url: "https://docs.example.com/runbooks/stale-data"
+
+      - alert: MissingCloudProviderData
+        expr: absent(cloud_security_findings_total{cloud_provider="aws"}) or absent(cloud_security_findings_total{cloud_provider="azure"}) or absent(cloud_security_findings_total{cloud_provider="gcp"})
+        for: 30m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Missing cloud provider security data"
+          description: "No security findings data available for one or more cloud providers"
+          runbook_url: "https://docs.example.com/runbooks/missing-data"
+
+      # Compliance Alerts
+      - alert: ComplianceFrameworkMissing
+        expr: absent(cloud_security_compliance_score{framework="cis"}) or absent(cloud_security_compliance_score{framework="nist"})
+        for: 1h
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Missing compliance framework data"
+          description: "Compliance data missing for required frameworks"
+          runbook_url: "https://docs.example.com/runbooks/missing-compliance"
+
+      # Security Events
+      - alert: UnauthorizedAccess
+        expr: increase(cloud_security_unauthorized_access_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Unauthorized access attempt detected"
+          description: "{{ $value }} unauthorized access attempts in the last 5 minutes"
+          runbook_url: "https://docs.example.com/runbooks/unauthorized-access"
+
+      - alert: SuspiciousActivity
+        expr: increase(cloud_security_suspicious_activity_total[10m]) > 3
+        for: 0m
+        labels:
+          severity: warning
+          service: cloud-security-mcp
+          team: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "{{ $value }} suspicious activities detected in the last 10 minutes"
+          runbook_url: "https://docs.example.com/runbooks/suspicious-activity"
+
+  - name: cloud_security_mcp_deadman
+    rules:
+      - alert: DeadMansSwitch
+        expr: vector(1)
+        labels:
+          severity: none
+          service: cloud-security-mcp
+          team: sre
+        annotations:
+          summary: "DeadMansSwitch for Cloud Security MCP"
+          description: "This is a DeadMansSwitch meant to ensure that the entire alerting pipeline is functional."

@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  cybersec-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cybersec-mcp-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./audit_logs:/app/audit_logs
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONPATH=/app
+      - MCP_CONFIG_PATH=/app/config.yaml
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE  # For log file access
+    networks:
+      - cybersec-network
+
+  kali-base:
+    image: kalilinux/kali-rolling
+    command: sleep infinity
+    networks:
+      - cybersec-network
+    profiles:
+      - tools  # Only start when needed
+
+networks:
+  cybersec-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

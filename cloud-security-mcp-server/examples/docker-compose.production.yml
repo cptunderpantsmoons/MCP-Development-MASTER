@@ -1,0 +1,510 @@
+# Production Docker Compose Configuration
+# This configuration is optimized for production deployments with
+# proper security, monitoring, and high availability considerations
+
+version: '3.8'
+
+services:
+  # Main Cloud Security MCP Server
+  cloud-security-mcp:
+    image: ghcr.io/your-org/cloud-security-mcp-server:latest
+    container_name: cloud-security-mcp-prod
+    restart: unless-stopped
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=INFO
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/cloud_security
+      - PROMETHEUS_ENABLED=true
+      - HEALTH_CHECK_ENABLED=true
+    
+    # Configuration from environment file
+    env_file:
+      - .env.production
+    
+    # Volume mounts
+    volumes:
+      # Configuration
+      - ./config/production.yaml:/app/config/config.yaml:ro
+      - ./config/credentials:/app/config/credentials:ro
+      
+      # Cloud provider credentials (read-only)
+      - ~/.aws:/home/clouduser/.aws:ro
+      - ~/.azure:/home/clouduser/.azure:ro
+      - ~/.config/gcloud:/home/clouduser/.config/gcloud:ro
+      - ~/.kube:/home/clouduser/.kube:ro
+      
+      # Data persistence
+      - scan_results:/app/scan_results
+      - logs:/app/logs
+      
+      # Docker socket for security tools
+      - /var/run/docker.sock:/var/run/docker.sock
+    
+    # Port exposure
+    ports:
+      - "8080:8080"   # Main application port
+      - "9090:9090"   # Metrics port
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+    
+    # Security settings
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Need write access for scan results
+    tmpfs:
+      - /tmp:noexec,nosuid,size=1G
+    
+    # Dependencies
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    
+    # Networks
+    networks:
+      - cloud-security-network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: cloud-security-redis-prod
+    restart: unless-stopped
+    
+    # Configuration
+    command: >
+      redis-server 
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    
+    # Volume for persistence
+    volumes:
+      - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100M
+    
+    # Networks
+    networks:
+      - cloud-security-network
+
+  # PostgreSQL for persistent data storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: cloud-security-postgres-prod
+    restart: unless-stopped
+    
+    # Environment variables
+    environment:
+      - POSTGRES_DB=cloud_security
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+      - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
+    
+    # Volumes
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cloud_security"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # PostgreSQL needs write access
+    tmpfs:
+      - /tmp:noexec,nosuid,size=500M
+    
+    # Networks
+    networks:
+      - cloud-security-network
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cloud-security-prometheus-prod
+    restart: unless-stopped
+    
+    # Command line options
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=10GB'
+      - '--web.enable-admin-api'
+    
+    # Volumes
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts:/etc/prometheus/alerts:ro
+      - prometheus_data:/prometheus
+    
+    # Ports
+    ports:
+      - "9090:9090"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Prometheus needs write access for data
+    
+    # Networks
+    networks:
+      - cloud-security-network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cloud-security-grafana-prod
+    restart: unless-stopped
+    
+    # Environment
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+      - GF_SERVER_DOMAIN=grafana.yourdomain.com
+      - GF_SERVER_ROOT_URL=https://grafana.yourdomain.com
+    
+    # Volumes
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    
+    # Ports
+    ports:
+      - "3000:3000"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    
+    # Dependencies
+    depends_on:
+      - prometheus
+    
+    # Networks
+    networks:
+      - cloud-security-network
+
+  # Alertmanager for handling alerts
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: cloud-security-alertmanager-prod
+    restart: unless-stopped
+    
+    # Command
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://alertmanager.yourdomain.com'
+    
+    # Volumes
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    
+    # Ports
+    ports:
+      - "9093:9093"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    
+    # Networks
+    networks:
+      - cloud-security-network
+
+  # Nginx reverse proxy with SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: cloud-security-nginx-prod
+    restart: unless-stopped
+    
+    # Volumes
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    
+    # Ports
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=100M
+      - /var/run:size=10M
+    
+    # Dependencies
+    depends_on:
+      - cloud-security-mcp
+      - grafana
+    
+    # Networks
+    networks:
+      - cloud-security-network
+
+  # Log aggregation with Loki
+  loki:
+    image: grafana/loki:latest
+    container_name: cloud-security-loki-prod
+    restart: unless-stopped
+    
+    # Command
+    command: -config.file=/etc/loki/local-config.yaml
+    
+    # Volumes
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    
+    # Ports
+    ports:
+      - "3100:3100"
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    
+    # Networks
+    networks:
+      - cloud-security-network
+
+  # Log shipping with Promtail
+  promtail:
+    image: grafana/promtail:latest
+    container_name: cloud-security-promtail-prod
+    restart: unless-stopped
+    
+    # Command
+    command: -config.file=/etc/promtail/config.yml
+    
+    # Volumes
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - logs:/var/log/cloud-security:ro
+      - /var/log:/var/log/host:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    
+    # Dependencies
+    depends_on:
+      - loki
+    
+    # Networks
+    networks:
+      - cloud-security-network
+
+# Named volumes for data persistence
+volumes:
+  scan_results:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/cloud-security/scan_results
+  
+  logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/cloud-security/logs
+  
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/cloud-security/postgres
+  
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/cloud-security/redis
+  
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/cloud-security/prometheus
+  
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/cloud-security/grafana
+  
+  alertmanager_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/cloud-security/alertmanager
+  
+  loki_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/cloud-security/loki
+  
+  nginx_logs:
+    driver: local
+
+# Networks
+networks:
+  cloud-security-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: cloud-security-br

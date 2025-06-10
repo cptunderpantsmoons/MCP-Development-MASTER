@@ -1,0 +1,519 @@
+syntax = "proto3";
+
+package dsn.consensus.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+option go_package = "github.com/dsn/decentralized-sentinel-network/proto/consensus/v1;consensusv1";
+
+// ConsensusService provides distributed ledger and state management
+service ConsensusService {
+  // Ledger operations
+  rpc SubmitTransaction(TransactionRequest) returns (TransactionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/consensus/transactions"
+      body: "*"
+    };
+  }
+  
+  rpc QueryLedger(QueryRequest) returns (QueryResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/consensus/query"
+    };
+  }
+  
+  rpc GetBlockByNumber(BlockRequest) returns (BlockResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/consensus/blocks/{block_number}"
+    };
+  }
+  
+  rpc GetBlockByHash(BlockHashRequest) returns (BlockResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/consensus/blocks/hash/{block_hash}"
+    };
+  }
+  
+  rpc GetTransaction(GetTransactionRequest) returns (TransactionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/consensus/transactions/{transaction_id}"
+    };
+  }
+  
+  // State management
+  rpc GetWorldState(StateRequest) returns (StateResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/consensus/state"
+    };
+  }
+  
+  rpc ValidateState(StateValidationRequest) returns (StateValidationResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/consensus/state/validate"
+      body: "*"
+    };
+  }
+  
+  // Threat intelligence
+  rpc RecordThreat(ThreatRecord) returns (ThreatRecordResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/consensus/threats"
+      body: "*"
+    };
+  }
+  
+  rpc QueryThreats(ThreatQuery) returns (ThreatQueryResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/consensus/threats"
+    };
+  }
+  
+  rpc GetThreat(GetThreatRequest) returns (ThreatRecord) {
+    option (google.api.http) = {
+      get: "/api/v1/consensus/threats/{threat_id}"
+    };
+  }
+  
+  rpc ShareThreatIntelligence(ThreatIntelligence) returns (ThreatIntelligenceResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/consensus/threats/share"
+      body: "*"
+    };
+  }
+  
+  // Network operations
+  rpc GetPeerInfo(PeerInfoRequest) returns (PeerInfoResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/consensus/peers"
+    };
+  }
+  
+  rpc GetNetworkStatus(NetworkStatusRequest) returns (NetworkStatusResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/consensus/network/status"
+    };
+  }
+  
+  // Consensus operations
+  rpc ProposeBlock(BlockProposal) returns (BlockProposalResponse);
+  rpc VoteOnBlock(BlockVote) returns (BlockVoteResponse);
+  rpc GetConsensusStatus(ConsensusStatusRequest) returns (ConsensusStatusResponse);
+}
+
+// Transaction Messages
+message TransactionRequest {
+  string channel_id = 1;
+  string chaincode_id = 2;
+  string function_name = 3;
+  repeated string args = 4;
+  map<string, bytes> transient_data = 5;
+  string client_id = 6;
+  google.protobuf.Timestamp timestamp = 7;
+  bytes signature = 8;
+}
+
+message TransactionResponse {
+  string transaction_id = 1;
+  TransactionStatus status = 2;
+  bytes payload = 3;
+  string message = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  int64 block_number = 6;
+  string block_hash = 7;
+  repeated ValidationResult validations = 8;
+}
+
+enum TransactionStatus {
+  TRANSACTION_UNKNOWN = 0;
+  TRANSACTION_PENDING = 1;
+  TRANSACTION_VALID = 2;
+  TRANSACTION_INVALID = 3;
+  TRANSACTION_COMMITTED = 4;
+  TRANSACTION_FAILED = 5;
+}
+
+message ValidationResult {
+  string validator_id = 1;
+  bool is_valid = 2;
+  string reason = 3;
+  google.protobuf.Timestamp validated_at = 4;
+}
+
+// Query Messages
+message QueryRequest {
+  string channel_id = 1;
+  string chaincode_id = 2;
+  string function_name = 3;
+  repeated string args = 4;
+  string client_id = 5;
+}
+
+message QueryResponse {
+  bytes payload = 1;
+  string message = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  QueryMetadata metadata = 4;
+}
+
+message QueryMetadata {
+  string peer_id = 1;
+  int64 block_height = 2;
+  string state_hash = 3;
+}
+
+// Block Messages
+message BlockRequest {
+  int64 block_number = 1;
+  string channel_id = 2;
+}
+
+message BlockHashRequest {
+  string block_hash = 1;
+  string channel_id = 2;
+}
+
+message BlockResponse {
+  Block block = 1;
+  BlockMetadata metadata = 2;
+}
+
+message Block {
+  BlockHeader header = 1;
+  repeated Transaction transactions = 2;
+  bytes metadata_hash = 3;
+}
+
+message BlockHeader {
+  int64 number = 1;
+  string previous_hash = 2;
+  string data_hash = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  string proposer_id = 5;
+  bytes signature = 6;
+}
+
+message Transaction {
+  string id = 1;
+  TransactionType type = 2;
+  bytes payload = 3;
+  string creator_id = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  bytes signature = 6;
+  repeated Endorsement endorsements = 7;
+}
+
+enum TransactionType {
+  TRANSACTION_TYPE_UNKNOWN = 0;
+  TRANSACTION_TYPE_THREAT_RECORD = 1;
+  TRANSACTION_TYPE_STATE_UPDATE = 2;
+  TRANSACTION_TYPE_CONFIG_CHANGE = 3;
+  TRANSACTION_TYPE_PEER_JOIN = 4;
+  TRANSACTION_TYPE_PEER_LEAVE = 5;
+}
+
+message Endorsement {
+  string peer_id = 1;
+  bytes signature = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+message BlockMetadata {
+  int32 transaction_count = 1;
+  int64 block_size_bytes = 2;
+  repeated string validator_signatures = 3;
+}
+
+message GetTransactionRequest {
+  string transaction_id = 1;
+  string channel_id = 2;
+}
+
+// State Messages
+message StateRequest {
+  string channel_id = 1;
+  string key_prefix = 2;
+  int32 limit = 3;
+  string page_token = 4;
+}
+
+message StateResponse {
+  repeated StateEntry entries = 1;
+  string next_page_token = 2;
+  StateMetadata metadata = 3;
+}
+
+message StateEntry {
+  string key = 1;
+  bytes value = 2;
+  int64 version = 3;
+  google.protobuf.Timestamp last_modified = 4;
+  string last_modified_by = 5;
+}
+
+message StateMetadata {
+  int64 total_entries = 1;
+  string state_hash = 2;
+  int64 block_height = 3;
+}
+
+message StateValidationRequest {
+  string channel_id = 1;
+  string expected_state_hash = 2;
+  int64 block_height = 3;
+}
+
+message StateValidationResponse {
+  bool is_valid = 1;
+  string actual_state_hash = 2;
+  string expected_state_hash = 3;
+  repeated StateDiscrepancy discrepancies = 4;
+}
+
+message StateDiscrepancy {
+  string key = 1;
+  bytes expected_value = 2;
+  bytes actual_value = 3;
+  string description = 4;
+}
+
+// Threat Intelligence Messages
+message ThreatRecord {
+  string threat_id = 1;
+  string threat_type = 2;
+  ThreatSeverity severity = 3;
+  string signature = 4;
+  map<string, string> metadata = 5;
+  google.protobuf.Timestamp detected_at = 6;
+  string source_sentinel = 7;
+  repeated string indicators = 8;
+  string description = 9;
+  double confidence_score = 10;
+  ThreatCategory category = 11;
+}
+
+enum ThreatSeverity {
+  THREAT_SEVERITY_UNKNOWN = 0;
+  THREAT_SEVERITY_LOW = 1;
+  THREAT_SEVERITY_MEDIUM = 2;
+  THREAT_SEVERITY_HIGH = 3;
+  THREAT_SEVERITY_CRITICAL = 4;
+}
+
+enum ThreatCategory {
+  THREAT_CATEGORY_UNKNOWN = 0;
+  THREAT_CATEGORY_MALWARE = 1;
+  THREAT_CATEGORY_INTRUSION = 2;
+  THREAT_CATEGORY_DATA_BREACH = 3;
+  THREAT_CATEGORY_CONFIGURATION = 4;
+  THREAT_CATEGORY_ANOMALY = 5;
+  THREAT_CATEGORY_VULNERABILITY = 6;
+}
+
+message ThreatRecordResponse {
+  string record_id = 1;
+  TransactionStatus status = 2;
+  string transaction_id = 3;
+  google.protobuf.Timestamp recorded_at = 4;
+}
+
+message ThreatQuery {
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp end_time = 2;
+  repeated ThreatSeverity severity_filter = 3;
+  repeated ThreatCategory category_filter = 4;
+  repeated string source_filter = 5;
+  string signature_pattern = 6;
+  int32 limit = 7;
+  string page_token = 8;
+}
+
+message ThreatQueryResponse {
+  repeated ThreatRecord threats = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+  ThreatStatistics statistics = 4;
+}
+
+message ThreatStatistics {
+  int32 total_threats = 1;
+  map<string, int32> severity_counts = 2;
+  map<string, int32> category_counts = 3;
+  map<string, int32> source_counts = 4;
+  google.protobuf.Timestamp last_updated = 5;
+}
+
+message GetThreatRequest {
+  string threat_id = 1;
+}
+
+message ThreatIntelligence {
+  repeated ThreatRecord threats = 1;
+  string sharing_peer_id = 2;
+  google.protobuf.Timestamp shared_at = 3;
+  ThreatIntelligenceMetadata metadata = 4;
+}
+
+message ThreatIntelligenceMetadata {
+  string source_network = 1;
+  string intelligence_version = 2;
+  repeated string tags = 3;
+  double confidence_threshold = 4;
+}
+
+message ThreatIntelligenceResponse {
+  string sharing_id = 1;
+  int32 threats_accepted = 2;
+  int32 threats_rejected = 3;
+  repeated string rejection_reasons = 4;
+  google.protobuf.Timestamp processed_at = 5;
+}
+
+// Network Messages
+message PeerInfoRequest {
+  string peer_id = 1; // Optional: get specific peer info
+}
+
+message PeerInfoResponse {
+  repeated PeerInfo peers = 1;
+  NetworkTopology topology = 2;
+}
+
+message PeerInfo {
+  string peer_id = 1;
+  string endpoint = 2;
+  PeerStatus status = 3;
+  google.protobuf.Timestamp last_seen = 4;
+  int64 block_height = 5;
+  string version = 6;
+  map<string, string> metadata = 7;
+}
+
+enum PeerStatus {
+  PEER_STATUS_UNKNOWN = 0;
+  PEER_STATUS_ACTIVE = 1;
+  PEER_STATUS_INACTIVE = 2;
+  PEER_STATUS_DISCONNECTED = 3;
+  PEER_STATUS_SYNCING = 4;
+}
+
+message NetworkTopology {
+  int32 total_peers = 1;
+  int32 active_peers = 2;
+  repeated string channels = 3;
+  map<string, int32> peer_distribution = 4;
+}
+
+message NetworkStatusRequest {}
+
+message NetworkStatusResponse {
+  NetworkHealth health = 1;
+  ConsensusMetrics consensus_metrics = 2;
+  PerformanceMetrics performance_metrics = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+message NetworkHealth {
+  enum HealthStatus {
+    HEALTH_UNKNOWN = 0;
+    HEALTH_HEALTHY = 1;
+    HEALTH_DEGRADED = 2;
+    HEALTH_UNHEALTHY = 3;
+  }
+  
+  HealthStatus overall_status = 1;
+  double consensus_participation = 2;
+  double network_connectivity = 3;
+  int32 failed_transactions_rate = 4;
+  repeated string issues = 5;
+}
+
+message ConsensusMetrics {
+  double average_block_time = 1;
+  int32 pending_transactions = 2;
+  double transaction_throughput = 3;
+  int32 failed_consensus_rounds = 4;
+  double consensus_efficiency = 5;
+}
+
+message PerformanceMetrics {
+  double average_response_time = 1;
+  int64 total_transactions = 2;
+  int64 total_blocks = 3;
+  double storage_usage_gb = 4;
+  double network_bandwidth_mbps = 5;
+}
+
+// Consensus Protocol Messages
+message BlockProposal {
+  Block proposed_block = 1;
+  string proposer_id = 2;
+  google.protobuf.Timestamp proposal_time = 3;
+  bytes proposer_signature = 4;
+  string justification = 5;
+}
+
+message BlockProposalResponse {
+  string proposal_id = 1;
+  bool accepted = 2;
+  string reason = 3;
+  google.protobuf.Timestamp response_time = 4;
+}
+
+message BlockVote {
+  string proposal_id = 1;
+  string voter_id = 2;
+  VoteType vote = 3;
+  google.protobuf.Timestamp vote_time = 4;
+  bytes voter_signature = 5;
+  string justification = 6;
+}
+
+enum VoteType {
+  VOTE_UNKNOWN = 0;
+  VOTE_APPROVE = 1;
+  VOTE_REJECT = 2;
+  VOTE_ABSTAIN = 3;
+}
+
+message BlockVoteResponse {
+  string vote_id = 1;
+  bool recorded = 2;
+  string message = 3;
+}
+
+message ConsensusStatusRequest {}
+
+message ConsensusStatusResponse {
+  ConsensusPhase current_phase = 1;
+  int64 current_round = 2;
+  string current_leader = 3;
+  repeated ActiveProposal active_proposals = 4;
+  ConsensusStatistics statistics = 5;
+}
+
+enum ConsensusPhase {
+  CONSENSUS_PHASE_UNKNOWN = 0;
+  CONSENSUS_PHASE_PREPARE = 1;
+  CONSENSUS_PHASE_PROPOSE = 2;
+  CONSENSUS_PHASE_VOTE = 3;
+  CONSENSUS_PHASE_COMMIT = 4;
+}
+
+message ActiveProposal {
+  string proposal_id = 1;
+  string proposer_id = 2;
+  int32 votes_for = 3;
+  int32 votes_against = 4;
+  int32 votes_abstain = 5;
+  google.protobuf.Timestamp deadline = 6;
+}
+
+message ConsensusStatistics {
+  int32 successful_rounds = 1;
+  int32 failed_rounds = 2;
+  double average_round_time = 3;
+  int32 total_participants = 4;
+  double participation_rate = 5;
+}

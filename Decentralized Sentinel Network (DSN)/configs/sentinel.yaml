@@ -1,0 +1,176 @@
+# DSN Sentinel Node Configuration
+# This is a sample configuration file for development environment
+
+# Basic identification
+sentinel_id: "sentinel-dev-001"
+region: "us-west-2"
+zone: "us-west-2a"
+
+# Server configuration
+server:
+  grpc_port: 9090
+  http_port: 8080
+  metrics_port: 8081
+  read_timeout: "30s"
+  write_timeout: "30s"
+  max_connections: 1000
+
+# Logging configuration
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+
+# Metrics configuration
+metrics:
+  enabled: true
+  path: "/metrics"
+  namespace: "dsn"
+  subsystem: "sentinel"
+  push_gateway: ""
+
+# Monitoring configuration (new for monitor package)
+monitoring:
+  enabled: true
+  interval: "30s"
+  metrics_enabled: true
+  security_enabled: true
+  rate_limit: 1000
+  
+  # System monitoring thresholds
+  thresholds:
+    cpu_warning: 80.0
+    cpu_critical: 90.0
+    memory_warning: 75.0
+    memory_critical: 85.0
+    health_score_critical: 0.5
+    
+  # Security monitoring settings
+  security:
+    anomaly_detection: true
+    metric_validation: true
+    rate_limiting: true
+    alert_throttling: true
+
+# Health check configuration
+health_check:
+  enabled: true
+  interval: "30s"
+  timeout: "5s"
+  endpoint: "/health"
+
+# Threat detection configuration
+threat_detection:
+  enabled: true
+  scan_interval: "60s"
+  deep_scan_enabled: false
+  max_concurrent_scans: 3
+  excluded_paths:
+    - "/tmp"
+    - "/var/log"
+    - "/proc"
+    - "/sys"
+  
+  # Detection engines
+  engines:
+    signature:
+      enabled: true
+      database_path: "/var/lib/dsn/signatures"
+      update_interval: "24h"
+      custom_rules: []
+    
+    anomaly:
+      enabled: true
+      sensitivity_level: "medium"
+      learning_period: "168h" # 1 week
+      confidence_threshold: 0.8
+    
+    behavior:
+      enabled: true
+      monitoring_window: "1h"
+      baseline_update: "24h"
+  
+  # Thresholds
+  thresholds:
+    cpu_usage: 80.0
+    memory_usage: 85.0
+    disk_usage: 90.0
+    network_traffic: 1000000000 # 1GB/s
+    error_rate: 5.0
+
+# Security configuration
+security:
+  tls:
+    enabled: false # Set to true in production
+    cert_file: "/etc/dsn/tls/server.crt"
+    key_file: "/etc/dsn/tls/server.key"
+    ca_file: "/etc/dsn/tls/ca.crt"
+  
+  mtls:
+    enabled: false # Set to true in production
+    client_cert: "/etc/dsn/tls/client.crt"
+    client_key: "/etc/dsn/tls/client.key"
+    server_name: "dsn-sentinel"
+  
+  vault:
+    enabled: false # Set to true when Vault is available
+    address: "https://vault.dsn.internal:8200"
+    token: ""
+    namespace: "dsn"
+    auth_method: "kubernetes"
+    secret_path: "secret/dsn/sentinel"
+  
+  auth:
+    enabled: false # Set to true in production
+    method: "jwt"
+    jwt_secret: "your-jwt-secret-here"
+    oauth2:
+      client_id: ""
+      client_secret: ""
+      auth_url: ""
+      token_url: ""
+      redirect_url: ""
+
+# External services configuration
+services:
+  consensus:
+    enabled: false # Will be enabled when consensus layer is available
+    endpoints:
+      - "consensus-node-1:7051"
+      - "consensus-node-2:7051"
+      - "consensus-node-3:7051"
+    timeout: "30s"
+    tls:
+      enabled: false
+      cert_file: ""
+      key_file: ""
+      ca_file: ""
+  
+  ai_engine:
+    enabled: false # Will be enabled when AI engine is available
+    endpoints:
+      - "ai-engine:8080"
+    timeout: "60s"
+    api_key: ""
+  
+  healing:
+    enabled: false # Will be enabled when self-healing is available
+    endpoints:
+      - "healing-service:9090"
+    timeout: "30s"
+  
+  prometheus:
+    enabled: false # Set to true when Prometheus is available
+    endpoint: "http://prometheus:9090"
+    username: ""
+    password: ""
+
+# Storage configuration
+storage:
+  type: "local" # local, s3, gcs, azure
+  path: "/var/lib/dsn/data"
+  bucket: ""
+  region: ""
+  endpoint: ""
+  retention_days: 30
+  max_size: "10GB"

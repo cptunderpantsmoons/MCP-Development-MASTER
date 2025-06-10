@@ -1,0 +1,313 @@
+{
+  "framework": {
+    "id": "nist_csf",
+    "name": "NIST Cybersecurity Framework",
+    "version": "2.0",
+    "description": "Framework for Improving Critical Infrastructure Cybersecurity",
+    "website": "https://www.nist.gov/cyberframework",
+    "last_updated": "2024-02-26"
+  },
+  "functions": [
+    {
+      "id": "ID",
+      "name": "Identify",
+      "description": "Develop an organizational understanding to manage cybersecurity risk to systems, people, assets, data, and capabilities.",
+      "categories": [
+        {
+          "id": "ID.AM",
+          "name": "Asset Management",
+          "description": "The data, personnel, devices, systems, and facilities that enable the organization to achieve business purposes are identified and managed consistent with their relative importance to organizational objectives and the organization's risk strategy.",
+          "subcategories": [
+            {
+              "id": "ID.AM-1",
+              "description": "Physical devices and systems within the organization are inventoried"
+            },
+            {
+              "id": "ID.AM-2", 
+              "description": "Software platforms and applications within the organization are inventoried"
+            },
+            {
+              "id": "ID.AM-3",
+              "description": "Organizational communication and data flows are mapped"
+            }
+          ]
+        },
+        {
+          "id": "ID.BE",
+          "name": "Business Environment",
+          "description": "The organization's mission, objectives, stakeholders, and activities are understood and prioritized; this information is used to inform cybersecurity roles, responsibilities, and risk management decisions.",
+          "subcategories": [
+            {
+              "id": "ID.BE-1",
+              "description": "The organization's role in the supply chain is identified and communicated"
+            },
+            {
+              "id": "ID.BE-2",
+              "description": "The organization's place in critical infrastructure and its industry sector is identified and communicated"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PR",
+      "name": "Protect", 
+      "description": "Develop and implement appropriate safeguards to ensure delivery of critical infrastructure services.",
+      "categories": [
+        {
+          "id": "PR.AC",
+          "name": "Identity Management and Access Control",
+          "description": "Access to physical and logical assets and associated facilities is limited to authorized users, processes, and devices, and is managed consistent with the assessed risk of unauthorized access to authorized activities and transactions.",
+          "subcategories": [
+            {
+              "id": "PR.AC-1",
+              "description": "Identities and credentials are issued, managed, verified, revoked, and audited for authorized devices, users and processes"
+            },
+            {
+              "id": "PR.AC-2",
+              "description": "Physical access to assets is managed and protected"
+            }
+          ]
+        },
+        {
+          "id": "PR.AT",
+          "name": "Awareness and Training",
+          "description": "The organization's personnel and partners are provided cybersecurity awareness education and are trained to perform their cybersecurity-related duties and responsibilities consistent with related policies, procedures, and agreements.",
+          "subcategories": [
+            {
+              "id": "PR.AT-1",
+              "description": "All users are informed and trained"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DE",
+      "name": "Detect",
+      "description": "Develop and implement appropriate activities to identify the occurrence of a cybersecurity event.",
+      "categories": [
+        {
+          "id": "DE.AE",
+          "name": "Anomalies and Events",
+          "description": "Anomalous activity is detected and the potential impact of events is understood.",
+          "subcategories": [
+            {
+              "id": "DE.AE-1",
+              "description": "A baseline of network operations and expected data flows for users and systems is established and managed"
+            }
+          ]
+        },
+        {
+          "id": "DE.CM",
+          "name": "Security Continuous Monitoring",
+          "description": "The information system and assets are monitored to identify cybersecurity events and verify the effectiveness of protective measures.",
+          "subcategories": [
+            {
+              "id": "DE.CM-1",
+              "description": "The network is monitored to detect potential cybersecurity events"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RS",
+      "name": "Respond",
+      "description": "Develop and implement appropriate activities to take action regarding a detected cybersecurity incident.",
+      "categories": [
+        {
+          "id": "RS.RP",
+          "name": "Response Planning",
+          "description": "Response processes and procedures are executed and maintained, to ensure response to detected cybersecurity incidents.",
+          "subcategories": [
+            {
+              "id": "RS.RP-1",
+              "description": "Response plan is executed during or after an incident"
+            }
+          ]
+        },
+        {
+          "id": "RS.CO",
+          "name": "Communications",
+          "description": "Response activities are coordinated with internal and external stakeholders (e.g. external support from law enforcement agencies).",
+          "subcategories": [
+            {
+              "id": "RS.CO-1",
+              "description": "Personnel know their roles and order of operations when a response is needed"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RC",
+      "name": "Recover",
+      "description": "Develop and implement appropriate activities to maintain plans for resilience and to restore any capabilities or services that were impaired due to a cybersecurity incident.",
+      "categories": [
+        {
+          "id": "RC.RP",
+          "name": "Recovery Planning",
+          "description": "Recovery processes and procedures are executed and maintained to ensure restoration of systems or assets affected by cybersecurity incidents.",
+          "subcategories": [
+            {
+              "id": "RC.RP-1",
+              "description": "Recovery plan is executed during or after a cybersecurity incident"
+            }
+          ]
+        },
+        {
+          "id": "RC.IM",
+          "name": "Improvements",
+          "description": "Recovery planning and processes are improved by incorporating lessons learned into future activities.",
+          "subcategories": [
+            {
+              "id": "RC.IM-1",
+              "description": "Recovery plans incorporate lessons learned"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "cloud_mappings": {
+    "aws": {
+      "services": [
+        {
+          "service": "IAM",
+          "functions": ["ID", "PR"],
+          "categories": ["ID.AM", "PR.AC"],
+          "controls": [
+            {
+              "id": "PR.AC-1",
+              "aws_controls": ["iam_user_mfa_enabled", "iam_password_policy", "iam_access_key_rotation"]
+            }
+          ]
+        },
+        {
+          "service": "CloudTrail",
+          "functions": ["DE"],
+          "categories": ["DE.AE", "DE.CM"],
+          "controls": [
+            {
+              "id": "DE.AE-1",
+              "aws_controls": ["cloudtrail_enabled", "cloudtrail_log_file_validation"]
+            }
+          ]
+        },
+        {
+          "service": "Config",
+          "functions": ["ID", "DE"],
+          "categories": ["ID.AM", "DE.CM"],
+          "controls": [
+            {
+              "id": "ID.AM-1",
+              "aws_controls": ["config_enabled", "config_delivery_channel"]
+            }
+          ]
+        }
+      ]
+    },
+    "azure": {
+      "services": [
+        {
+          "service": "Azure AD",
+          "functions": ["ID", "PR"],
+          "categories": ["ID.AM", "PR.AC"],
+          "controls": [
+            {
+              "id": "PR.AC-1",
+              "azure_controls": ["aad_mfa_enabled", "aad_password_policy", "aad_privileged_identity_management"]
+            }
+          ]
+        },
+        {
+          "service": "Security Center",
+          "functions": ["DE", "PR"],
+          "categories": ["DE.CM", "PR.IP"],
+          "controls": [
+            {
+              "id": "DE.CM-1",
+              "azure_controls": ["security_center_enabled", "security_center_auto_provisioning"]
+            }
+          ]
+        }
+      ]
+    },
+    "gcp": {
+      "services": [
+        {
+          "service": "Cloud IAM",
+          "functions": ["ID", "PR"],
+          "categories": ["ID.AM", "PR.AC"],
+          "controls": [
+            {
+              "id": "PR.AC-1",
+              "gcp_controls": ["iam_service_account_keys", "iam_admin_service_accounts", "iam_primitive_roles"]
+            }
+          ]
+        },
+        {
+          "service": "Cloud Logging",
+          "functions": ["DE"],
+          "categories": ["DE.AE", "DE.CM"],
+          "controls": [
+            {
+              "id": "DE.AE-1",
+              "gcp_controls": ["logging_sink_enabled", "logging_retention_policy"]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "implementation_tiers": [
+    {
+      "tier": 1,
+      "name": "Partial",
+      "description": "Limited awareness of cybersecurity risk and activities"
+    },
+    {
+      "tier": 2,
+      "name": "Risk Informed", 
+      "description": "Risk management practices are approved by management but may not be established as organizational-wide policy"
+    },
+    {
+      "tier": 3,
+      "name": "Repeatable",
+      "description": "Risk management practices are formally approved and expressed as policy"
+    },
+    {
+      "tier": 4,
+      "name": "Adaptive",
+      "description": "Organization adapts its cybersecurity practices based on lessons learned and predictive indicators"
+    }
+  ],
+  "profiles": {
+    "current": {
+      "description": "Current state of cybersecurity activities",
+      "assessment_method": "questionnaire"
+    },
+    "target": {
+      "description": "Desired cybersecurity outcomes",
+      "assessment_method": "risk_based"
+    }
+  },
+  "scoring": {
+    "method": "maturity_based",
+    "levels": {
+      "1": "Initial/Ad hoc",
+      "2": "Developing", 
+      "3": "Defined",
+      "4": "Managed",
+      "5": "Optimizing"
+    },
+    "weights": {
+      "identify": 0.20,
+      "protect": 0.25,
+      "detect": 0.20,
+      "respond": 0.20,
+      "recover": 0.15
+    }
+  }
+}

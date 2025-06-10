@@ -1,0 +1,225 @@
+# Pre-commit hooks for Cloud Security MCP Server
+# Install with: pre-commit install
+
+repos:
+  # Pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^.*\.(md|rst)$
+      - id: end-of-file-fixer
+        exclude: ^.*\.(md|rst)$
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: debug-statements
+      - id: name-tests-test
+        args: [--pytest-test-first]
+      - id: requirements-txt-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Security scanning
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: ["-c", "pyproject.toml"]
+        additional_dependencies: ["bandit[toml]"]
+        exclude: ^tests/
+
+  # Code formatting
+  - repo: https://github.com/psf/black
+    rev: 23.11.0
+    hooks:
+      - id: black
+        language_version: python3
+
+  # Import sorting
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  # Linting
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.1.0
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-docstrings
+          - flake8-bugbear
+          - flake8-comprehensions
+          - flake8-simplify
+        args: [--max-line-length=127]
+
+  # Type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.7.1
+    hooks:
+      - id: mypy
+        additional_dependencies: 
+          - types-requests
+          - types-PyYAML
+          - types-python-dateutil
+        args: [--ignore-missing-imports]
+
+  # Upgrade syntax
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+      - id: pyupgrade
+        args: [--py39-plus]
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: [--ignore, DL3008, --ignore, DL3009]
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        args: [--severity=warning]
+
+  # YAML formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        types: [yaml]
+        exclude: ^\.github/
+
+  # Secrets detection
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: ^(tests/.*|.*\.lock|.*\.log)$
+
+  # Documentation
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        match: '^cloud_security_mcp_server/.*\.py$'
+        args: [--convention=google]
+
+  # License check
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.4
+    hooks:
+      - id: insert-license
+        files: \.py$
+        args:
+          - --license-filepath
+          - .license_header.txt
+          - --comment-style
+          - "#"
+
+  # Python dependency vulnerability scanning
+  - repo: https://github.com/PyCQA/safety
+    rev: 2.3.5
+    hooks:
+      - id: safety
+        args: [--short-report, --ignore=70612]
+
+  # Terraform/HCL formatting and validation
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.86.0
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+      - id: terraform_docs
+      - id: terraform_tflint
+        args:
+          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+
+  # GitHub Actions validation
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.27.2
+    hooks:
+      - id: check-github-workflows
+
+  # Commit message validation
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  # Local hooks for custom checks
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true
+        args: [--maxfail=1, --tb=short, -x]
+        stages: [push]
+
+      - id: coverage-check
+        name: coverage-check
+        entry: bash -c 'coverage run -m pytest && coverage report --fail-under=80'
+        language: system
+        pass_filenames: false
+        stages: [push]
+
+      - id: docker-build-check
+        name: docker-build-check
+        entry: docker build -t cloud-security-mcp:test .
+        language: system
+        files: ^(Dockerfile|requirements\.txt|setup\.py)$
+        pass_filenames: false
+
+      - id: security-audit
+        name: security-audit
+        entry: bash -c 'pip-audit --desc --require requirements.txt'
+        language: system
+        pass_filenames: false
+        stages: [push]
+
+      - id: validate-config-schema
+        name: validate-config-schema
+        entry: python -c "import yaml; import json; yaml.safe_load(open('examples/config_example.yaml'))"
+        language: system
+        files: ^examples/config_example\.yaml$
+        pass_filenames: false
+
+      - id: check-no-todos
+        name: check-no-todos
+        entry: bash -c 'if grep -r "TODO\|FIXME\|XXX\|HACK" cloud_security_mcp_server/ --exclude-dir=__pycache__ --exclude="*.pyc"; then echo "Found TODO/FIXME comments. Please resolve before committing."; exit 1; fi'
+        language: system
+        pass_filenames: false
+        stages: [commit]
+
+# Global configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+    
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: [pytest-check, coverage-check, docker-build-check, security-audit]
+  submodules: false

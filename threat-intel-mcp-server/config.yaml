@@ -1,0 +1,162 @@
+# Threat Intelligence MCP Server Configuration
+
+# API Keys Configuration
+# Add your API keys here for enhanced threat intelligence capabilities
+api_keys:
+  # VirusTotal API (Free tier: 4 requests/min, Premium: 1000 requests/min)
+  virustotal_api_key: null  # Get from: https://www.virustotal.com/gui/join-us
+  
+  # Shodan API (Free tier: 100 requests/month, Premium: varies)
+  shodan_api_key: null      # Get from: https://account.shodan.io/
+  
+  # Have I Been Pwned API (Free tier: 10 requests/min with delays)
+  hibp_api_key: null        # Get from: https://haveibeenpwned.com/API/Key
+  
+  # AbuseIPDB API (Free tier: 1000 requests/day)
+  abuseipdb_api_key: null   # Get from: https://www.abuseipdb.com/api
+  
+  # GreyNoise API (Community: free, Premium: paid)
+  greynoise_api_key: null   # Get from: https://viz.greynoise.io/account/
+  
+  # URLVoid API (Pay-as-you-go pricing)
+  urlvoid_api_key: null     # Get from: https://www.urlvoid.com/api/
+  
+  # AlienVault OTX API (Free community access)
+  otx_api_key: null         # Get from: https://otx.alienvault.com/api
+  
+  # Censys API (Free tier: 250 searches/month)
+  censys_api_id: null       # Get from: https://search.censys.io/account/api
+  censys_api_secret: null
+
+# Rate Limiting Configuration
+rate_limiting:
+  max_requests_per_minute: 100
+  enable_rate_limiting: true
+  
+  # Per-API rate limits (requests per minute)
+  api_limits:
+    virustotal: 4      # Free tier limit
+    shodan: 100
+    hibp: 10
+    abuseipdb: 16      # ~1000/day converted to per minute
+    greynoise: 100
+    urlvoid: 100
+    otx: 300
+    censys: 4          # ~250/month converted to per minute
+
+# Caching Configuration
+caching:
+  enable_caching: true
+  cache_ttl_minutes: 60
+  max_cache_entries: 10000
+  
+  # Cache TTL by indicator type (minutes)
+  cache_ttl_by_type:
+    ip: 30
+    domain: 60
+    url: 15
+    hash: 1440  # 24 hours for file hashes
+    email: 60
+
+# Intelligence Analysis Configuration
+analysis:
+  confidence_calculation:
+    min_sources_for_high_confidence: 3
+    reputation_threshold_malicious: 25
+    reputation_threshold_suspicious: 60
+    
+  threat_categorization:
+    abuse_confidence_threshold: 25
+    malware_detection_threshold: 1
+    scanner_activity_weight: 0.3
+    breach_severity_multiplier: 1.5
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  log_path: "./intel_logs"
+  max_log_files: 30
+  log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # What to log
+  log_queries: true
+  log_results: true
+  log_api_errors: true
+  log_rate_limits: true
+
+# Security Configuration
+security:
+  require_authentication: false  # Set to true for production
+  api_key_header: "X-Intel-API-Key"
+  allowed_origins: ["*"]  # Restrict in production
+  max_bulk_indicators: 50
+  
+  # Input validation
+  max_indicator_length: 500
+  allowed_protocols: ["http", "https", "ftp"]
+  
+# Monitoring Configuration
+monitoring:
+  enable_metrics: true
+  metrics_port: 9090
+  health_check_interval: 300  # seconds
+  
+  # Alerting thresholds
+  alert_on_high_threat_score: 80
+  alert_on_api_failures: 5    # consecutive failures
+  alert_on_rate_limit_hits: 3
+
+# Output Configuration
+output:
+  default_format: "markdown"
+  include_raw_data: false
+  max_response_size: 1048576  # 1MB
+  
+  # Response formatting
+  include_recommendations: true
+  include_context: true
+  include_source_links: true
+  
+# Feed Monitoring Configuration
+feed_monitoring:
+  enable_monitoring: false
+  check_interval_minutes: 60
+  
+  # Default feeds to monitor
+  default_feeds:
+    - "otx"
+    - "abuse_ch"
+    - "malware_bazaar"
+  
+  # Alert settings
+  alert_threshold: 70
+  max_alerts_per_hour: 10
+
+# Integration Configuration
+integrations:
+  # SIEM Integration
+  siem:
+    enable_syslog: false
+    syslog_server: "localhost"
+    syslog_port: 514
+    
+  # Webhook Integration
+  webhooks:
+    enable_webhooks: false
+    webhook_urls: []
+    webhook_timeout: 30
+    
+  # Database Integration
+  database:
+    enable_persistence: false
+    db_url: "sqlite:///threat_intel.db"
+    
+# Performance Configuration
+performance:
+  max_concurrent_requests: 10
+  request_timeout: 30
+  connection_pool_size: 100
+  
+  # Bulk processing
+  bulk_batch_size: 20
+  bulk_processing_delay: 0.1  # seconds between requests

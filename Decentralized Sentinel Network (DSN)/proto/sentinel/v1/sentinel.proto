@@ -1,0 +1,385 @@
+syntax = "proto3";
+
+package dsn.sentinel.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/dsn/decentralized-sentinel-network/proto/sentinel/v1;sentinelv1";
+
+// SentinelService provides monitoring and threat detection capabilities
+service SentinelService {
+  // Health and status operations
+  rpc GetHealth(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sentinel/health"
+    };
+  }
+  
+  rpc GetStatus(StatusRequest) returns (StatusResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sentinel/status"
+      additional_bindings {
+        get: "/api/v1/sentinel/{sentinel_id}/status"
+      }
+    };
+  }
+  
+  // Monitoring operations
+  rpc GetMetrics(MetricsRequest) returns (MetricsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sentinel/metrics"
+    };
+  }
+  
+  rpc StreamMetrics(MetricsRequest) returns (stream MetricsResponse);
+  
+  // Threat detection operations
+  rpc DetectThreats(ThreatDetectionRequest) returns (ThreatDetectionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/sentinel/threats/detect"
+      body: "*"
+    };
+  }
+  
+  rpc GetThreatHistory(ThreatHistoryRequest) returns (ThreatHistoryResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sentinel/threats/history"
+    };
+  }
+  
+  rpc GetThreat(GetThreatRequest) returns (ThreatEvent) {
+    option (google.api.http) = {
+      get: "/api/v1/sentinel/threats/{threat_id}"
+    };
+  }
+  
+  // Configuration operations
+  rpc ValidateConfig(ConfigValidationRequest) returns (ConfigValidationResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/sentinel/config/validate"
+      body: "*"
+    };
+  }
+  
+  rpc UpdateConfig(ConfigUpdateRequest) returns (ConfigUpdateResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/sentinel/config"
+      body: "*"
+    };
+  }
+  
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sentinel/config"
+    };
+  }
+  
+  // Audit operations
+  rpc StartAudit(AuditRequest) returns (AuditResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/sentinel/audit/start"
+      body: "*"
+    };
+  }
+  
+  rpc StopAudit(StopAuditRequest) returns (AuditResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/sentinel/audit/stop"
+      body: "*"
+    };
+  }
+  
+  rpc GetAuditStatus(AuditStatusRequest) returns (AuditStatusResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sentinel/audit/{audit_id}/status"
+    };
+  }
+  
+  rpc GetAuditResults(GetAuditResultsRequest) returns (GetAuditResultsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sentinel/audit/{audit_id}/results"
+    };
+  }
+}
+
+// Health Check Messages
+message HealthRequest {
+  string component = 1;
+}
+
+message HealthResponse {
+  enum Status {
+    UNKNOWN = 0;
+    HEALTHY = 1;
+    UNHEALTHY = 2;
+    DEGRADED = 3;
+  }
+  
+  Status status = 1;
+  string message = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  map<string, string> details = 4;
+  repeated ComponentHealth components = 5;
+}
+
+message ComponentHealth {
+  string name = 1;
+  HealthResponse.Status status = 2;
+  google.protobuf.Timestamp last_check = 3;
+  string message = 4;
+}
+
+// Status Messages
+message StatusRequest {
+  string sentinel_id = 1;
+}
+
+message StatusResponse {
+  string sentinel_id = 1;
+  string version = 2;
+  google.protobuf.Timestamp started_at = 3;
+  google.protobuf.Duration uptime = 4;
+  SystemInfo system_info = 5;
+  repeated string active_scans = 6;
+  int32 threats_detected_today = 7;
+}
+
+message SystemInfo {
+  double cpu_usage_percent = 1;
+  int64 memory_usage_bytes = 2;
+  int64 memory_total_bytes = 3;
+  int64 disk_usage_bytes = 4;
+  int64 disk_total_bytes = 5;
+  string network_status = 6;
+  int32 active_connections = 7;
+}
+
+// Metrics Messages
+message MetricsRequest {
+  repeated string metric_names = 1;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+  google.protobuf.Duration interval = 4;
+  string sentinel_id = 5;
+}
+
+message MetricsResponse {
+  repeated Metric metrics = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string sentinel_id = 3;
+}
+
+message Metric {
+  string name = 1;
+  double value = 2;
+  map<string, string> labels = 3;
+  string unit = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+// Threat Detection Messages
+message ThreatDetectionRequest {
+  string target_id = 1;
+  repeated string detection_types = 2;
+  ThreatDetectionConfig config = 3;
+  string scan_id = 4; // Optional: for tracking specific scans
+}
+
+message ThreatDetectionConfig {
+  google.protobuf.Duration timeout = 1;
+  bool enable_deep_scan = 2;
+  repeated string excluded_paths = 3;
+  int32 max_concurrent_scans = 4;
+  double confidence_threshold = 5;
+}
+
+message ThreatDetectionResponse {
+  repeated ThreatEvent threats = 1;
+  ThreatSummary summary = 2;
+  string scan_id = 3;
+  google.protobuf.Timestamp scan_started_at = 4;
+  google.protobuf.Timestamp scan_completed_at = 5;
+  string status = 6;
+}
+
+message ThreatEvent {
+  enum Severity {
+    UNKNOWN = 0;
+    LOW = 1;
+    MEDIUM = 2;
+    HIGH = 3;
+    CRITICAL = 4;
+  }
+  
+  string id = 1;
+  string type = 2;
+  Severity severity = 3;
+  string title = 4;
+  string description = 5;
+  google.protobuf.Timestamp detected_at = 6;
+  string source = 7;
+  map<string, string> metadata = 8;
+  repeated string indicators = 9;
+  double confidence_score = 10;
+  string remediation_advice = 11;
+}
+
+message ThreatSummary {
+  int32 total_threats = 1;
+  int32 critical_threats = 2;
+  int32 high_threats = 3;
+  int32 medium_threats = 4;
+  int32 low_threats = 5;
+  double overall_risk_score = 6;
+  google.protobuf.Duration scan_duration = 7;
+}
+
+// Threat History Messages
+message ThreatHistoryRequest {
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp end_time = 2;
+  repeated ThreatEvent.Severity severity_filter = 3;
+  repeated string type_filter = 4;
+  string target_id = 5;
+  int32 limit = 6;
+  string page_token = 7;
+}
+
+message ThreatHistoryResponse {
+  repeated ThreatEvent threats = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GetThreatRequest {
+  string threat_id = 1;
+}
+
+// Configuration Messages
+message ConfigValidationRequest {
+  string config_data = 1;
+  string config_type = 2;
+  string target_environment = 3;
+  bool strict_validation = 4;
+}
+
+message ConfigValidationResponse {
+  bool is_valid = 1;
+  repeated ValidationError errors = 2;
+  repeated ValidationWarning warnings = 3;
+  string validated_config = 4;
+  string schema_version = 5;
+}
+
+message ValidationError {
+  string field = 1;
+  string message = 2;
+  string code = 3;
+  string severity = 4;
+}
+
+message ValidationWarning {
+  string field = 1;
+  string message = 2;
+  string recommendation = 3;
+}
+
+message ConfigUpdateRequest {
+  string config_data = 1;
+  string config_type = 2;
+  bool validate_before_update = 3;
+  bool backup_current = 4;
+}
+
+message ConfigUpdateResponse {
+  bool success = 1;
+  string message = 2;
+  string backup_id = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message GetConfigRequest {
+  string config_type = 1;
+  bool include_defaults = 2;
+}
+
+message GetConfigResponse {
+  string config_data = 1;
+  string config_type = 2;
+  string schema_version = 3;
+  google.protobuf.Timestamp last_updated = 4;
+}
+
+// Audit Messages
+message AuditRequest {
+  string audit_id = 1;
+  string target_system = 2;
+  repeated string scan_types = 3;
+  AuditConfig config = 4;
+  map<string, string> metadata = 5;
+}
+
+message AuditConfig {
+  google.protobuf.Duration timeout = 1;
+  int32 max_concurrent_scans = 2;
+  bool enable_deep_scan = 3;
+  repeated string excluded_paths = 4;
+  bool generate_report = 5;
+  string report_format = 6; // json, pdf, html
+}
+
+message AuditResponse {
+  string audit_id = 1;
+  string status = 2;
+  google.protobuf.Timestamp started_at = 3;
+  google.protobuf.Duration estimated_duration = 4;
+  string message = 5;
+}
+
+message StopAuditRequest {
+  string audit_id = 1;
+  bool force_stop = 2;
+  string reason = 3;
+}
+
+message AuditStatusRequest {
+  string audit_id = 1;
+}
+
+message AuditStatusResponse {
+  string audit_id = 1;
+  string status = 2; // pending, running, completed, failed, cancelled
+  google.protobuf.Timestamp started_at = 3;
+  google.protobuf.Timestamp completed_at = 4;
+  int32 progress_percentage = 5;
+  string current_phase = 6;
+  repeated string completed_scans = 7;
+  repeated string pending_scans = 8;
+  ThreatSummary preliminary_results = 9;
+}
+
+message GetAuditResultsRequest {
+  string audit_id = 1;
+  string format = 2; // json, summary, detailed
+}
+
+message GetAuditResultsResponse {
+  string audit_id = 1;
+  repeated ThreatEvent threats = 2;
+  ThreatSummary summary = 3;
+  string report_data = 4; // JSON or other format
+  google.protobuf.Timestamp generated_at = 5;
+  AuditMetadata metadata = 6;
+}
+
+message AuditMetadata {
+  string target_system = 1;
+  repeated string scan_types = 2;
+  google.protobuf.Duration total_duration = 3;
+  int32 files_scanned = 4;
+  int64 data_processed_bytes = 5;
+  string dsn_version = 6;
+  map<string, string> environment_info = 7;
+}

@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  # DSN Sentinel Node
+  sentinel:
+    build:
+      context: ../../
+      dockerfile: deployments/docker/Dockerfile.sentinel
+    container_name: dsn-sentinel-dev
+    ports:
+      - "8080:8080"   # HTTP API
+      - "9090:9090"   # gRPC API
+      - "8081:8081"   # Metrics
+    volumes:
+      - ./configs/sentinel.yaml:/etc/dsn/sentinel.yaml:ro
+      - sentinel_data:/var/lib/dsn/data
+      - sentinel_logs:/var/log/dsn
+    environment:
+      - DSN_CONFIG_FILE=/etc/dsn/sentinel.yaml
+      - DSN_LOG_LEVEL=debug
+      - DSN_LOG_FORMAT=json
+      - DSN_ENVIRONMENT=development
+    networks:
+      - dsn-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/sentinel", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: dsn-prometheus-dev
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - dsn-network
+    restart: unless-stopped
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: dsn-grafana-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    networks:
+      - dsn-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7.0-alpine
+    container_name: dsn-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass dsn-dev-password
+    networks:
+      - dsn-network
+    restart: unless-stopped
+
+  # PostgreSQL for persistent data storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: dsn-postgres-dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    environment:
+      - POSTGRES_DB=dsn_dev
+      - POSTGRES_USER=dsn_user
+      - POSTGRES_PASSWORD=dsn_dev_password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    networks:
+      - dsn-network
+    restart: unless-stopped
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.47
+    container_name: dsn-jaeger-dev
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Jaeger collector
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - dsn-network
+    restart: unless-stopped
+
+volumes:
+  sentinel_data:
+    driver: local
+  sentinel_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  dsn-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

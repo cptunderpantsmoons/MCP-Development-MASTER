@@ -1,0 +1,525 @@
+# Cloud Security MCP Server - Kubernetes Deployment
+# This file contains the main application deployment and related resources
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloud-security
+  labels:
+    name: cloud-security
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: namespace
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloud-security-mcp
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: serviceaccount
+annotations:
+  # AWS IAM role annotation for IRSA (if using AWS)
+  eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/cloud-security-mcp-role
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloud-security-mcp
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: rbac
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["security.openshift.io"]
+  resources: ["securitycontextconstraints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["policy"]
+  resources: ["podsecuritypolicies"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloud-security-mcp
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cloud-security-mcp
+subjects:
+- kind: ServiceAccount
+  name: cloud-security-mcp
+  namespace: cloud-security
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-security-secrets
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: secrets
+type: Opaque
+data:
+  # Base64 encoded secrets - replace with actual values
+  postgres-password: Y2xvdWRzZWN1cml0eQ==  # cloudsecurity
+  redis-password: Y2xvdWRzZWN1cml0eQ==     # cloudsecurity
+  jwt-secret: Y2xvdWRzZWN1cml0eWp3dA==     # cloudsecurityjwt
+  # AWS credentials (if not using IRSA)
+  aws-access-key-id: ""
+  aws-secret-access-key: ""
+  # Azure credentials
+  azure-client-id: ""
+  azure-client-secret: ""
+  # GCP credentials (JSON service account key)
+  gcp-service-account-key: ""
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-security-config
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: config
+data:
+  config.yaml: |
+    # Cloud Security MCP Server Configuration
+    server_name: "cloud-security-mcp"
+    server_version: "1.0.0"
+    
+    # Database configuration
+    database:
+      url: "postgresql://postgres:$(POSTGRES_PASSWORD)@postgres:5432/cloud_security"
+      pool_size: 10
+      max_overflow: 20
+    
+    # Redis configuration
+    redis_url: "redis://:$(REDIS_PASSWORD)@redis:6379/0"
+    
+    # Security tools configuration
+    security_tools:
+      enable_container_scanning: true
+      enable_iac_scanning: true
+      enable_compliance_checks: true
+      max_scan_time_minutes: 30
+      max_concurrent_scans: 5
+    
+    # Compliance frameworks
+    compliance:
+      frameworks: ["cis", "nist", "soc2"]
+    
+    # Logging
+    logging:
+      level: "INFO"
+      format: "json"
+    
+    # Monitoring
+    monitoring:
+      enable_metrics: true
+      metrics_port: 9090
+      health_check:
+        enabled: true
+        port: 8080
+        path: "/health"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-security-mcp
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: server
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloud-security-mcp
+      app.kubernetes.io/component: server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cloud-security-mcp
+        app.kubernetes.io/component: server
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: cloud-security-mcp
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:15-alpine
+        command: ['sh', '-c', 'until pg_isready -h postgres -p 5432 -U postgres; do echo waiting for postgres; sleep 2; done;']
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloud-security-secrets
+              key: postgres-password
+      - name: wait-for-redis
+        image: redis:7-alpine
+        command: ['sh', '-c', 'until redis-cli -h redis -p 6379 -a $REDIS_PASSWORD ping; do echo waiting for redis; sleep 2; done;']
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloud-security-secrets
+              key: redis-password
+      containers:
+      - name: cloud-security-mcp
+        image: ghcr.io/your-org/cloud-security-mcp-server:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloud-security-secrets
+              key: postgres-password
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloud-security-secrets
+              key: redis-password
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cloud-security-secrets
+              key: jwt-secret
+        # AWS credentials (if not using IRSA)
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: cloud-security-secrets
+              key: aws-access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-security-secrets
+              key: aws-secret-access-key
+              optional: true
+        # Azure credentials
+        - name: AZURE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: cloud-security-secrets
+              key: azure-client-id
+              optional: true
+        - name: AZURE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cloud-security-secrets
+              key: azure-client-secret
+              optional: true
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        - name: scan-results
+          mountPath: /app/scan_results
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+          readOnly: true
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        configMap:
+          name: cloud-security-config
+      - name: scan-results
+        persistentVolumeClaim:
+          claimName: cloud-security-scan-results
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - cloud-security-mcp
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-security-mcp
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: server
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: server
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cloud-security-scan-results
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: efs-sc  # Use appropriate storage class
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloud-security-mcp
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - cloud-security.yourdomain.com
+    secretName: cloud-security-tls
+  rules:
+  - host: cloud-security.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cloud-security-mcp
+            port:
+              number: 8080
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cloud-security-mcp
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloud-security-mcp
+      app.kubernetes.io/component: server
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cloud-security-mcp
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cloud-security-mcp
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cloud-security-mcp
+  namespace: cloud-security
+  labels:
+    app.kubernetes.io/name: cloud-security-mcp
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cloud-security-mcp
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to: []  # Allow all egress for cloud API calls
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: []  # DNS
+    ports:
+    - protocol: UDP
+      port: 53

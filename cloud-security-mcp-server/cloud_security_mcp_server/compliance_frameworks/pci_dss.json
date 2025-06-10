@@ -1,0 +1,392 @@
+{
+  "framework": {
+    "id": "pci_dss",
+    "name": "PCI DSS",
+    "version": "4.0",
+    "description": "Payment Card Industry Data Security Standard",
+    "website": "https://www.pcisecuritystandards.org/",
+    "last_updated": "2024-03-31"
+  },
+  "principles": [
+    {
+      "id": "SECURE_NETWORK",
+      "name": "Build and Maintain a Secure Network and Systems",
+      "requirements": [
+        {
+          "id": "1",
+          "title": "Install and maintain network security controls",
+          "description": "Network security controls (NSCs) are in place to protect the cardholder data environment.",
+          "testing_procedures": [
+            "1.1.1 - All security policies and operational procedures are documented",
+            "1.1.2 - Security policies are reviewed at least once every 12 months",
+            "1.2.1 - Configuration standards for NSCs are defined and implemented",
+            "1.2.2 - NSCs are configured to restrict connections between untrusted networks"
+          ]
+        },
+        {
+          "id": "2",
+          "title": "Apply secure configurations to all system components",
+          "description": "Malicious individuals, both external and internal to an entity, often use default passwords and other vendor default settings to compromise systems.",
+          "testing_procedures": [
+            "2.1.1 - Configuration standards are developed for all system components",
+            "2.2.1 - All vendor defaults are changed before installing a system on the network",
+            "2.2.2 - System configuration standards address all known security vulnerabilities",
+            "2.2.3 - Additional security features are enabled for authentication credentials"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PROTECT_DATA",
+      "name": "Protect Cardholder Data",
+      "requirements": [
+        {
+          "id": "3",
+          "title": "Protect stored account data",
+          "description": "Protection methods such as encryption, truncation, masking, and hashing are critical components of account data protection.",
+          "testing_procedures": [
+            "3.1.1 - Cardholder data storage is kept to a minimum",
+            "3.2.1 - Account data storage is documented and validated",
+            "3.3.1 - Sensitive authentication data is not stored after authorization",
+            "3.4.1 - Account data is rendered unreadable anywhere it is stored"
+          ]
+        },
+        {
+          "id": "4",
+          "title": "Protect cardholder data with strong cryptography during transmission over open, public networks",
+          "description": "Sensitive information must be encrypted during transmission over networks that are easily accessed by malicious individuals.",
+          "testing_procedures": [
+            "4.1.1 - Processes and procedures are defined for secure transmission of account data",
+            "4.2.1 - Account data is protected with strong cryptography during transmission",
+            "4.2.2 - Account data is never sent via end-user messaging technologies"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VULNERABILITY_MANAGEMENT",
+      "name": "Maintain a Vulnerability Management Program",
+      "requirements": [
+        {
+          "id": "5",
+          "title": "Protect all systems and networks from malicious software",
+          "description": "Malicious software (malware) is software or firmware designed to infiltrate or damage a computer system without the owner's knowledge.",
+          "testing_procedures": [
+            "5.1.1 - An anti-malware solution is deployed on all system components",
+            "5.2.1 - All anti-malware mechanisms are maintained as follows",
+            "5.3.1 - Anti-malware mechanisms are active and cannot be disabled or altered by users"
+          ]
+        },
+        {
+          "id": "6",
+          "title": "Develop and maintain secure systems and software",
+          "description": "Security vulnerabilities in systems and software may allow criminals to access PAN and related data.",
+          "testing_procedures": [
+            "6.1.1 - Processes are defined for identifying and managing vulnerabilities",
+            "6.2.1 - Bespoke and custom software are developed securely",
+            "6.3.1 - Security vulnerabilities are identified and addressed",
+            "6.4.1 - Public-facing web applications are protected against attacks"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ACCESS_CONTROL",
+      "name": "Implement Strong Access Control Measures",
+      "requirements": [
+        {
+          "id": "7",
+          "title": "Restrict access to system components and cardholder data by business need to know",
+          "description": "To ensure critical data can only be accessed by authorized personnel, systems and processes must be in place to limit access based on need to know.",
+          "testing_procedures": [
+            "7.1.1 - Processes and procedures are defined for granting access to system components and cardholder data",
+            "7.2.1 - An access control model is defined and includes granting access as follows",
+            "7.3.1 - Access to system components and data is assigned and managed as follows"
+          ]
+        },
+        {
+          "id": "8",
+          "title": "Identify users and authenticate access to system components",
+          "description": "Assigning a unique identification (ID) to each person with access ensures that each individual is uniquely accountable for their actions.",
+          "testing_procedures": [
+            "8.1.1 - Processes and procedures are defined for identifying users and authenticating access",
+            "8.2.1 - User identification and related accounts for users and administrators are strictly managed",
+            "8.3.1 - Multi-factor authentication (MFA) is implemented for all access into the CDE"
+          ]
+        },
+        {
+          "id": "9",
+          "title": "Restrict physical access to cardholder data",
+          "description": "Any physical access to data or systems that house cardholder data provides the opportunity for individuals to access devices or data and to remove systems or hardcopies.",
+          "testing_procedures": [
+            "9.1.1 - Processes and procedures are defined for restricting physical access",
+            "9.2.1 - Physical access controls manage entry to facilities and systems",
+            "9.3.1 - Physical access for personnel and visitors is authorized and managed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MONITORING",
+      "name": "Regularly Monitor and Test Networks",
+      "requirements": [
+        {
+          "id": "10",
+          "title": "Log and monitor all access to system components and cardholder data",
+          "description": "Logging mechanisms and the ability to track user activities are critical in preventing, detecting, or minimizing the impact of a data compromise.",
+          "testing_procedures": [
+            "10.1.1 - Processes and procedures are defined for logging and monitoring",
+            "10.2.1 - Audit logs are implemented to support the detection of anomalies and suspicious activity",
+            "10.3.1 - Audit logs are protected from destruction and unauthorized modifications",
+            "10.4.1 - Audit logs are reviewed to identify anomalies and suspicious activity"
+          ]
+        },
+        {
+          "id": "11",
+          "title": "Test security of systems and networks regularly",
+          "description": "Vulnerabilities are being discovered continually by hackers and researchers, and being introduced by new software.",
+          "testing_procedures": [
+            "11.1.1 - Processes and procedures are defined for testing security",
+            "11.2.1 - Wireless access points are identified and monitored",
+            "11.3.1 - External and internal penetration testing is regularly performed",
+            "11.4.1 - Intrusion-detection and/or intrusion-prevention techniques are used"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "INFORMATION_SECURITY",
+      "name": "Maintain an Information Security Policy",
+      "requirements": [
+        {
+          "id": "12",
+          "title": "Support information security with organizational policies and programs",
+          "description": "A strong security policy sets the security tone for the whole entity and informs personnel what is expected of them.",
+          "testing_procedures": [
+            "12.1.1 - An overall information security policy is established",
+            "12.2.1 - Acceptable use policies for end-user technologies are defined",
+            "12.3.1 - Risks to the cardholder data environment are formally identified and managed",
+            "12.4.1 - PCI DSS compliance is managed as a formal program"
+          ]
+        }
+      ]
+    }
+  ],
+  "cloud_mappings": {
+    "aws": {
+      "services": [
+        {
+          "service": "VPC",
+          "requirements": ["1"],
+          "controls": [
+            {
+              "id": "1.2.2",
+              "aws_controls": ["vpc_security_group_rules", "vpc_nacl_rules", "vpc_flow_logs"]
+            }
+          ]
+        },
+        {
+          "service": "IAM",
+          "requirements": ["7", "8"],
+          "controls": [
+            {
+              "id": "7.2.1",
+              "aws_controls": ["iam_policy_least_privilege", "iam_user_groups"]
+            },
+            {
+              "id": "8.2.1",
+              "aws_controls": ["iam_user_mfa_enabled", "iam_password_policy"]
+            }
+          ]
+        },
+        {
+          "service": "CloudTrail",
+          "requirements": ["10"],
+          "controls": [
+            {
+              "id": "10.2.1",
+              "aws_controls": ["cloudtrail_enabled", "cloudtrail_log_file_validation"]
+            }
+          ]
+        },
+        {
+          "service": "S3",
+          "requirements": ["3", "4"],
+          "controls": [
+            {
+              "id": "3.4.1",
+              "aws_controls": ["s3_bucket_encryption", "s3_bucket_versioning"]
+            },
+            {
+              "id": "4.2.1",
+              "aws_controls": ["s3_bucket_ssl_requests_only"]
+            }
+          ]
+        },
+        {
+          "service": "EBS",
+          "requirements": ["3"],
+          "controls": [
+            {
+              "id": "3.4.1",
+              "aws_controls": ["ebs_encryption_enabled"]
+            }
+          ]
+        },
+        {
+          "service": "RDS",
+          "requirements": ["3", "4"],
+          "controls": [
+            {
+              "id": "3.4.1",
+              "aws_controls": ["rds_encryption_enabled", "rds_backup_encrypted"]
+            }
+          ]
+        },
+        {
+          "service": "Config",
+          "requirements": ["11"],
+          "controls": [
+            {
+              "id": "11.4.1",
+              "aws_controls": ["config_enabled", "config_delivery_channel"]
+            }
+          ]
+        }
+      ]
+    },
+    "azure": {
+      "services": [
+        {
+          "service": "Network Security Groups",
+          "requirements": ["1"],
+          "controls": [
+            {
+              "id": "1.2.2",
+              "azure_controls": ["nsg_rules_restricted", "nsg_flow_logs_enabled"]
+            }
+          ]
+        },
+        {
+          "service": "Azure AD",
+          "requirements": ["7", "8"],
+          "controls": [
+            {
+              "id": "7.2.1",
+              "azure_controls": ["aad_rbac_enabled", "aad_conditional_access"]
+            },
+            {
+              "id": "8.2.1",
+              "azure_controls": ["aad_mfa_enabled", "aad_password_policy"]
+            }
+          ]
+        },
+        {
+          "service": "Storage Account",
+          "requirements": ["3", "4"],
+          "controls": [
+            {
+              "id": "3.4.1",
+              "azure_controls": ["storage_encryption_enabled", "storage_key_vault_managed"]
+            }
+          ]
+        }
+      ]
+    },
+    "gcp": {
+      "services": [
+        {
+          "service": "VPC Firewall",
+          "requirements": ["1"],
+          "controls": [
+            {
+              "id": "1.2.2",
+              "gcp_controls": ["firewall_rules_restricted", "vpc_flow_logs_enabled"]
+            }
+          ]
+        },
+        {
+          "service": "Cloud IAM",
+          "requirements": ["7", "8"],
+          "controls": [
+            {
+              "id": "7.2.1",
+              "gcp_controls": ["iam_least_privilege", "iam_service_accounts_managed"]
+            }
+          ]
+        },
+        {
+          "service": "Cloud Storage",
+          "requirements": ["3", "4"],
+          "controls": [
+            {
+              "id": "3.4.1",
+              "gcp_controls": ["storage_encryption_enabled", "storage_uniform_bucket_access"]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "validation_levels": [
+    {
+      "level": 1,
+      "name": "Level 1",
+      "description": "Merchants processing over 6 million card transactions annually",
+      "requirements": [
+        "Annual on-site security assessment by QSA",
+        "Quarterly network scans by ASV",
+        "Attestation of Compliance (AOC)"
+      ]
+    },
+    {
+      "level": 2,
+      "name": "Level 2", 
+      "description": "Merchants processing 1-6 million card transactions annually",
+      "requirements": [
+        "Annual Self-Assessment Questionnaire (SAQ)",
+        "Quarterly network scans by ASV",
+        "Attestation of Compliance (AOC)"
+      ]
+    },
+    {
+      "level": 3,
+      "name": "Level 3",
+      "description": "Merchants processing 20,000-1 million e-commerce transactions annually",
+      "requirements": [
+        "Annual Self-Assessment Questionnaire (SAQ)",
+        "Quarterly network scans by ASV"
+      ]
+    },
+    {
+      "level": 4,
+      "name": "Level 4",
+      "description": "Merchants processing fewer than 20,000 e-commerce transactions annually",
+      "requirements": [
+        "Annual Self-Assessment Questionnaire (SAQ)",
+        "Quarterly network scans by ASV (may be required)"
+      ]
+    }
+  ],
+  "scoring": {
+    "method": "requirement_based",
+    "weights": {
+      "secure_network": 0.20,
+      "protect_data": 0.25,
+      "vulnerability_management": 0.20,
+      "access_control": 0.20,
+      "monitoring": 0.10,
+      "information_security": 0.05
+    },
+    "compliance_levels": {
+      "compliant": "All requirements met with evidence",
+      "compensating_controls": "Some requirements met with compensating controls",
+      "non_compliant": "One or more requirements not met"
+    },
+    "thresholds": {
+      "compliant": 100,
+      "compensating_controls": 95,
+      "non_compliant": 0
+    }
+  }
+}

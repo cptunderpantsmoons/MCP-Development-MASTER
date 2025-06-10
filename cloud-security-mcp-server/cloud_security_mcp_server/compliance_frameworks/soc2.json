@@ -1,0 +1,351 @@
+{
+  "framework": {
+    "id": "soc2",
+    "name": "SOC 2 Type II",
+    "version": "2017",
+    "description": "Service Organization Control 2 - Security, Availability, Processing Integrity, Confidentiality, and Privacy",
+    "website": "https://www.aicpa.org/interestareas/frc/assuranceadvisoryservices/sorhome.html",
+    "last_updated": "2024-01-01"
+  },
+  "trust_criteria": [
+    {
+      "id": "SECURITY",
+      "name": "Security",
+      "description": "Information and systems are protected against unauthorized access, unauthorized disclosure of information, and damage to systems that could compromise the availability, integrity, confidentiality, and privacy of information or systems and affect the entity's ability to meet its objectives.",
+      "common_criteria": [
+        {
+          "id": "CC1.0",
+          "title": "Control Environment",
+          "description": "The entity demonstrates a commitment to integrity and ethical values.",
+          "points_of_focus": [
+            "CC1.1 - Demonstrates commitment to integrity and ethical values",
+            "CC1.2 - Exercises oversight responsibility", 
+            "CC1.3 - Establishes structure, authority, and responsibility",
+            "CC1.4 - Demonstrates commitment to competence",
+            "CC1.5 - Enforces accountability"
+          ]
+        },
+        {
+          "id": "CC2.0",
+          "title": "Communication and Information",
+          "description": "The entity obtains or generates and uses relevant, quality information to support the functioning of internal control.",
+          "points_of_focus": [
+            "CC2.1 - Obtains or generates relevant, quality information",
+            "CC2.2 - Internally communicates information",
+            "CC2.3 - Communicates externally"
+          ]
+        },
+        {
+          "id": "CC3.0",
+          "title": "Risk Assessment",
+          "description": "The entity identifies, analyzes, and responds to risks related to achieving the objectives.",
+          "points_of_focus": [
+            "CC3.1 - Specifies suitable objectives",
+            "CC3.2 - Identifies and analyzes risk",
+            "CC3.3 - Assesses fraud risk",
+            "CC3.4 - Identifies and analyzes significant change"
+          ]
+        },
+        {
+          "id": "CC4.0",
+          "title": "Monitoring Activities",
+          "description": "The entity selects, develops, and performs ongoing and/or separate evaluations to ascertain whether the components of internal control are present and functioning.",
+          "points_of_focus": [
+            "CC4.1 - Conducts ongoing and separate evaluations",
+            "CC4.2 - Evaluates and communicates deficiencies"
+          ]
+        }
+      ],
+      "additional_criteria": [
+        {
+          "id": "CC5.0",
+          "title": "Control Activities",
+          "description": "The entity selects and develops control activities that contribute to the mitigation of risks to the achievement of objectives to acceptable levels.",
+          "points_of_focus": [
+            "CC5.1 - Selects and develops control activities",
+            "CC5.2 - Selects and develops general controls over technology",
+            "CC5.3 - Deploys control activities"
+          ]
+        },
+        {
+          "id": "CC6.0",
+          "title": "Logical and Physical Access Controls",
+          "description": "The entity implements logical and physical access controls to protect against threats from sources outside its system boundaries and to protect against threats from sources within its system boundaries but outside its network of internal communication.",
+          "points_of_focus": [
+            "CC6.1 - Implements logical access security software",
+            "CC6.2 - Restricts logical access",
+            "CC6.3 - Manages points of access",
+            "CC6.4 - Restricts physical access",
+            "CC6.5 - Discontinues logical and physical protections"
+          ]
+        },
+        {
+          "id": "CC7.0",
+          "title": "System Operations",
+          "description": "To meet its objectives, the entity uses detection and monitoring procedures to identify (1) changes to configurations that result in the introduction of new vulnerabilities, and (2) susceptibilities to newly discovered vulnerabilities.",
+          "points_of_focus": [
+            "CC7.1 - Detects and responds to system capacity issues",
+            "CC7.2 - Monitors system components",
+            "CC7.3 - Implements change management",
+            "CC7.4 - Responds to identified security events",
+            "CC7.5 - Identifies and responds to deployed software with vulnerabilities"
+          ]
+        },
+        {
+          "id": "CC8.0",
+          "title": "Change Management",
+          "description": "The entity authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes to infrastructure, data, software, and procedures to meet its objectives.",
+          "points_of_focus": [
+            "CC8.1 - Authorizes changes",
+            "CC8.2 - Designs and develops changes",
+            "CC8.3 - Documents changes",
+            "CC8.4 - Tracks system changes"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AVAILABILITY",
+      "name": "Availability",
+      "description": "Information or systems are available for operation and use as committed or agreed.",
+      "criteria": [
+        {
+          "id": "A1.0",
+          "title": "Availability",
+          "description": "The entity maintains, monitors, and evaluates current processing capacity and use of system components (infrastructure, data, and software) to manage capacity demand and to enable the implementation of additional capacity to help meet its objectives.",
+          "points_of_focus": [
+            "A1.1 - Maintains current processing capacity",
+            "A1.2 - Monitors current processing capacity",
+            "A1.3 - Evaluates current processing capacity"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PROCESSING_INTEGRITY",
+      "name": "Processing Integrity",
+      "description": "System processing is complete, valid, accurate, timely, and authorized to meet the entity's objectives.",
+      "criteria": [
+        {
+          "id": "PI1.0",
+          "title": "Processing Integrity",
+          "description": "The entity implements policies and procedures over system inputs, including controls over completeness and accuracy, to result in products, services, and reporting to meet the entity's objectives.",
+          "points_of_focus": [
+            "PI1.1 - Implements policies and procedures over system inputs"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CONFIDENTIALITY",
+      "name": "Confidentiality",
+      "description": "Information designated as confidential is protected as committed or agreed.",
+      "criteria": [
+        {
+          "id": "C1.0",
+          "title": "Confidentiality",
+          "description": "The entity identifies and maintains confidential information to meet the entity's objectives related to confidentiality.",
+          "points_of_focus": [
+            "C1.1 - Identifies and maintains confidential information",
+            "C1.2 - Disposes of confidential information"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PRIVACY",
+      "name": "Privacy",
+      "description": "Personal information is collected, used, retained, disclosed, and disposed of in conformity with the commitments in the entity's privacy notice and with criteria set forth in generally accepted privacy principles.",
+      "criteria": [
+        {
+          "id": "P1.0",
+          "title": "Privacy",
+          "description": "The entity provides notice to data subjects about its privacy practices to meet the entity's objectives related to privacy.",
+          "points_of_focus": [
+            "P1.1 - Provides notice to data subjects about privacy practices"
+          ]
+        }
+      ]
+    }
+  ],
+  "cloud_mappings": {
+    "aws": {
+      "services": [
+        {
+          "service": "IAM",
+          "trust_criteria": ["SECURITY"],
+          "common_criteria": ["CC6.0"],
+          "controls": [
+            {
+              "id": "CC6.1",
+              "aws_controls": ["iam_mfa_enabled", "iam_password_policy", "iam_user_access_key_age"]
+            },
+            {
+              "id": "CC6.2", 
+              "aws_controls": ["iam_user_unused_credentials", "iam_root_access_key_check"]
+            }
+          ]
+        },
+        {
+          "service": "CloudTrail",
+          "trust_criteria": ["SECURITY"],
+          "common_criteria": ["CC7.0"],
+          "controls": [
+            {
+              "id": "CC7.2",
+              "aws_controls": ["cloudtrail_enabled", "cloudtrail_log_file_validation", "cloudtrail_multi_region"]
+            }
+          ]
+        },
+        {
+          "service": "Config",
+          "trust_criteria": ["SECURITY"],
+          "common_criteria": ["CC7.0", "CC8.0"],
+          "controls": [
+            {
+              "id": "CC7.2",
+              "aws_controls": ["config_enabled", "config_delivery_channel"]
+            },
+            {
+              "id": "CC8.4",
+              "aws_controls": ["config_configuration_recorder"]
+            }
+          ]
+        },
+        {
+          "service": "VPC",
+          "trust_criteria": ["SECURITY"],
+          "common_criteria": ["CC6.0"],
+          "controls": [
+            {
+              "id": "CC6.3",
+              "aws_controls": ["vpc_flow_logs_enabled", "vpc_security_group_rules"]
+            }
+          ]
+        },
+        {
+          "service": "S3",
+          "trust_criteria": ["SECURITY", "CONFIDENTIALITY"],
+          "common_criteria": ["CC6.0"],
+          "controls": [
+            {
+              "id": "CC6.1",
+              "aws_controls": ["s3_bucket_public_access_prohibited", "s3_bucket_ssl_requests_only"]
+            }
+          ]
+        },
+        {
+          "service": "EBS",
+          "trust_criteria": ["CONFIDENTIALITY"],
+          "common_criteria": ["CC6.0"],
+          "controls": [
+            {
+              "id": "C1.1",
+              "aws_controls": ["ebs_encryption_enabled"]
+            }
+          ]
+        }
+      ]
+    },
+    "azure": {
+      "services": [
+        {
+          "service": "Azure AD",
+          "trust_criteria": ["SECURITY"],
+          "common_criteria": ["CC6.0"],
+          "controls": [
+            {
+              "id": "CC6.1",
+              "azure_controls": ["aad_mfa_enabled", "aad_password_policy"]
+            }
+          ]
+        },
+        {
+          "service": "Security Center",
+          "trust_criteria": ["SECURITY"],
+          "common_criteria": ["CC7.0"],
+          "controls": [
+            {
+              "id": "CC7.2",
+              "azure_controls": ["security_center_enabled", "security_center_auto_provisioning"]
+            }
+          ]
+        },
+        {
+          "service": "Storage Account",
+          "trust_criteria": ["SECURITY", "CONFIDENTIALITY"],
+          "common_criteria": ["CC6.0"],
+          "controls": [
+            {
+              "id": "CC6.1",
+              "azure_controls": ["storage_account_secure_transfer", "storage_account_encryption"]
+            }
+          ]
+        }
+      ]
+    },
+    "gcp": {
+      "services": [
+        {
+          "service": "Cloud IAM",
+          "trust_criteria": ["SECURITY"],
+          "common_criteria": ["CC6.0"],
+          "controls": [
+            {
+              "id": "CC6.1",
+              "gcp_controls": ["iam_service_account_keys", "iam_admin_service_accounts"]
+            }
+          ]
+        },
+        {
+          "service": "Cloud Logging",
+          "trust_criteria": ["SECURITY"],
+          "common_criteria": ["CC7.0"],
+          "controls": [
+            {
+              "id": "CC7.2",
+              "gcp_controls": ["logging_sink_enabled", "logging_retention_policy"]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "audit_requirements": {
+    "type_ii_requirements": [
+      "Operating effectiveness testing over a minimum period of time",
+      "Management assertion on design and operating effectiveness",
+      "Independent auditor testing and opinion",
+      "Continuous monitoring and control testing"
+    ],
+    "evidence_requirements": [
+      "Control documentation and procedures",
+      "Evidence of control operation",
+      "Management monitoring reports",
+      "Exception reports and remediation",
+      "Training records and awareness programs"
+    ]
+  },
+  "scoring": {
+    "method": "trust_criteria_weighted",
+    "weights": {
+      "security": 0.40,
+      "availability": 0.20,
+      "processing_integrity": 0.15,
+      "confidentiality": 0.15,
+      "privacy": 0.10
+    },
+    "maturity_levels": {
+      "1": "Initial - Controls are ad hoc and inconsistent",
+      "2": "Developing - Controls are developing but not fully mature",
+      "3": "Defined - Controls are documented and consistently applied",
+      "4": "Managed - Controls are monitored and measured",
+      "5": "Optimized - Controls are continuously improved"
+    },
+    "thresholds": {
+      "compliant": 85,
+      "partially_compliant": 70,
+      "non_compliant": 0
+    }
+  }
+}
